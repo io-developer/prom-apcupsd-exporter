@@ -3,13 +3,17 @@ package apc
 import "strings"
 
 type Output struct {
-	Foo string
-	Bar string
+	Raw    string
+	Parsed map[string]string
 }
 
-func ParseOutput(str string) map[string]string {
+func NewOutput(raw string) *Output {
+	return &Output{Raw: raw}
+}
+
+func (self *Output) Parse() {
 	dict := map[string]string{}
-	for _, line := range strings.Split(str, "\n") {
+	for _, line := range strings.Split(self.Raw, "\n") {
 		slice := strings.SplitN(line, ":", 2)
 		if len(slice) == 2 {
 			k := strings.Trim(slice[0], " \t")
@@ -17,5 +21,5 @@ func ParseOutput(str string) map[string]string {
 			dict[k] = v
 		}
 	}
-	return dict
+	self.Parsed = dict
 }

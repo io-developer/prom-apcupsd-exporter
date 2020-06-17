@@ -27,19 +27,21 @@ func CollectMetricsLoop(upscBinary string, addr string, interval time.Duration) 
 func CollectMetrics(upscBinary string, addr string) {
 	promLog.Infoln("CollectMetrics()")
 
-	upsOutput, err := exec.Command(upscBinary, "status", addr, "-u").Output()
-	kvMap := apc.ParseOutput(string(upsOutput))
+	cmdResult, err := exec.Command(upscBinary, "status", addr, "-u").Output()
 
-	promLog.Infof("kvMap %#v", kvMap)
+	output := apc.NewOutput(string(cmdResult))
+	output.Parse()
+
+	promLog.Infof("output %+#v", output)
 
 	if err != nil {
 		promLog.Fatal(err)
 	}
 
-	if batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1) == nil {
+	if batteryChargeRegex.FindAllStringSubmatch(string(cmdResult), -1) == nil {
 		prometheus.Unregister(BatteryCharge)
 	} else {
-		batteryChargeValue, _ := strconv.ParseFloat(batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1)[0][1], 64)
+		batteryChargeValue, _ := strconv.ParseFloat(batteryChargeRegex.FindAllStringSubmatch(string(cmdResult), -1)[0][1], 64)
 		BatteryCharge.Set(batteryChargeValue)
 	}
 }
