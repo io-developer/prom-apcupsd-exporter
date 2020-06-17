@@ -2,15 +2,23 @@ package main
 
 import (
 	"flag"
+	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/log"
+	promLog "github.com/prometheus/common/log"
+)
+
+// Common
+var (
+	logger = log.New(os.Stdout, "", 0)
 )
 
 // Regex
@@ -37,25 +45,44 @@ func registerMetrics() {
 	prometheus.MustRegister(upsStatus)
 }
 
-func startMetrics(upscBinary string, addr string) {
+func pollMetricsLoop(upscBinary string, addr string, interval time.Duration) {
 	for {
-		upsOutput, err := exec.Command(upscBinary, "status", addr, "-u").Output()
-
-		log.Infoln("upsOutput", upsOutput)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1) == nil {
-			prometheus.Unregister(batteryCharge)
-		} else {
-			batteryChargeValue, _ := strconv.ParseFloat(batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1)[0][1], 64)
-			batteryCharge.Set(batteryChargeValue)
-		}
-
-		time.Sleep(10 * time.Second)
+		pollMetrics(upscBinary, addr)
+		time.Sleep(interval)
 	}
+}
+
+func pollMetrics(upscBinary string, addr string) {
+	promLog.Infoln("pollMetrics()")
+
+	upsOutput, err := exec.Command(upscBinary, "status", addr, "-u").Output()
+	kvMap := parseOutput(string(upsOutput))
+
+	promLog.Infof("kvMap %#v", kvMap)
+
+	if err != nil {
+		promLog.Fatal(err)
+	}
+
+	if batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1) == nil {
+		prometheus.Unregister(batteryCharge)
+	} else {
+		batteryChargeValue, _ := strconv.ParseFloat(batteryChargeRegex.FindAllStringSubmatch(string(upsOutput), -1)[0][1], 64)
+		batteryCharge.Set(batteryChargeValue)
+	}
+}
+
+func parseOutput(str string) map[string]string {
+	dict := map[string]string{}
+	for _, line := range strings.Split(str, "\n") {
+		slice := strings.SplitN(line, ":", 2)
+		if len(slice) == 2 {
+			k := strings.Trim(slice[0], " \t")
+			v := strings.Trim(slice[1], " \t")
+			dict[k] = v
+		}
+	}
+	return dict
 }
 
 func main() {
@@ -65,12 +92,11 @@ func main() {
 	flag.Parse()
 
 	registerMetrics()
+	go pollMetricsLoop(*upscArg, *addrArg, 20*time.Second)
 
-	log.Infoln("Starting NUT exporter on ups", *addrArg)
+	promLog.Infoln("Starting exporter at", *listenArg)
+	promLog.Infoln("Watching ups", *addrArg)
+
 	http.Handle("/metrics", promhttp.Handler())
-
-	log.Infoln("Exporter started at ", *listenArg)
 	http.ListenAndServe(*listenArg, nil)
-
-	go startMetrics(*upscArg, *addrArg)
 }
