@@ -4,10 +4,8 @@ import (
 	"local/apcupsd_exporter/apc"
 	"os/exec"
 	"regexp"
-	"strconv"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	promLog "github.com/prometheus/common/log"
 )
 
@@ -24,24 +22,24 @@ func CollectMetricsLoop(upscBinary string, addr string, interval time.Duration) 
 	}
 }
 
-func CollectMetrics(upscBinary string, addr string) {
+func CollectMetrics(apcaccessPath string, addr string) {
 	promLog.Infoln("CollectMetrics()")
 
-	cmdResult, err := exec.Command(upscBinary, "status", addr, "-u").Output()
+	cmdResult, err := exec.Command(apcaccessPath, "status", addr, "-u").Output()
+	if err != nil {
+		promLog.Fatal(err)
+	}
 
 	output := apc.NewOutput(string(cmdResult))
 	output.Parse()
 
 	promLog.Infof("output %+#v", output)
 
-	if err != nil {
-		promLog.Fatal(err)
-	}
+	val, exists := output.GetFloat64("foo")
+	promLog.Infoln("get foo", val, "exists", exists)
 
-	if batteryChargeRegex.FindAllStringSubmatch(string(cmdResult), -1) == nil {
-		prometheus.Unregister(BatteryCharge)
-	} else {
-		batteryChargeValue, _ := strconv.ParseFloat(batteryChargeRegex.FindAllStringSubmatch(string(cmdResult), -1)[0][1], 64)
-		BatteryCharge.Set(batteryChargeValue)
-	}
+	val, exists = output.GetFloat64("LINEV")
+	promLog.Infoln("get LINEV", val, "exists", exists)
+
+	//	BatteryCharge.Set(output.Get())
 }
