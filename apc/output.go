@@ -18,7 +18,7 @@ func NewOutput(raw string) *Output {
 }
 
 // Parse method
-func (o *Output) Parse() *Output {
+func (o *Output) Parse() {
 	o.Parsed = make(map[string]string)
 	for _, line := range strings.Split(o.Raw, "\n") {
 		slice := strings.SplitN(line, ":", 2)
@@ -28,7 +28,6 @@ func (o *Output) Parse() *Output {
 			o.Parsed[key] = val
 		}
 	}
-	return o
 }
 
 // GetFloat64 value
