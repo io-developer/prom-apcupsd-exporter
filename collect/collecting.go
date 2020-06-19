@@ -36,7 +36,7 @@ func CollectMetrics(apcaccessPath string, addr string) {
 	promLog.Infof("output.Parsed %+#v", output.Parsed)
 
 	for _, metric := range Metrics {
-		val, exists := output.GetFloat64(metric.OutputKey)
+		val, exists := metric.GetOutputValue(output)
 		if exists {
 			metric.Gauge.Set(val)
 			metric.Register()

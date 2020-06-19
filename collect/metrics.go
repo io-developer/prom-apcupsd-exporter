@@ -40,7 +40,7 @@ NOMOUTV  : 230 Volts
 TONBATT  : 0 Seconds
 CUMONBATT: 0 Seconds
 XOFFBATT : N/A
-SENSE    : Low
+SENSE    : Low|High
 LOTRANS  : 180.0 Volts
 HITRANS  : 260.0 Volts
 BATTV    : 13.7 Volts
@@ -52,13 +52,15 @@ MANDATE  : 2018-01-09
 DWAKE    : 0 Seconds
 DSHUTD   : 180 Seconds
 RETPCT   : 0.0 Percent
-ALARMDEL : No alarm
+ALARMDEL : No alarm|30 Seconds
 
 LASTXFER : Unacceptable line voltage changes
+| No transfers since turnon
+
 NUMXFERS : 0
 
 SELFTEST : NO
-STESTI   : None
+STESTI   : None|14 days
 STATFLAG : 0x05000008
 SERIALNO : 4B1802P05216
 FIRMWARE : 808.q10 .I USB FW:q
@@ -94,9 +96,10 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_datetime",
-			Help: "",
+			Help: "ts",
 		}),
 		OutputKey: "BATTDATE",
+		Type:      "date",
 	},
 
 	// Input
@@ -106,6 +109,12 @@ var Metrics = []*Metric{
 			Help: "",
 		}),
 		OutputKey: "SENSE",
+		Type:      "valueMap",
+		ValueMap: map[string]float64{
+			"Low":    0,
+			"Normal": 1,
+			"High":   2,
+		},
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -163,9 +172,10 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_manafactured_datetime",
-			Help: "",
+			Help: "ts",
 		}),
 		OutputKey: "MANDATE",
+		Type:      "date",
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -190,22 +200,23 @@ var Metrics = []*Metric{
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_timeleft_minutes",
-			Help: "",
+			Name: "apcupsd_ups_timeleft",
+			Help: "seconds",
 		}),
 		OutputKey: "TIMELEFT",
+		Type:      "minutes",
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_onbattery_seconds",
-			Help: "",
+			Name: "apcupsd_ups_onbattery",
+			Help: "seconds",
 		}),
 		OutputKey: "TONBATT",
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_onbattery_seconds_cumulative",
-			Help: "",
+			Name: "apcupsd_ups_onbattery_cumulative",
+			Help: "seconds",
 		}),
 		OutputKey: "CUMONBATT",
 	},
@@ -228,16 +239,18 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_shutdown_min_timeleft",
-			Help: "minutes",
+			Help: "seconds",
 		}),
 		OutputKey: "MINTIMEL",
+		Type:      "minutes",
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_shutdown_max_time",
-			Help: "minutes",
+			Help: "seconds",
 		}),
 		OutputKey: "MAXTIME",
+		Type:      "minutes",
 	},
 }
 
