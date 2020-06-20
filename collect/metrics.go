@@ -39,7 +39,8 @@ NOMINV   : 230 Volts
 NOMOUTV  : 230 Volts
 TONBATT  : 0 Seconds
 CUMONBATT: 0 Seconds
-XOFFBATT : N/A
+XOFFBATT : N/A  date time
+XONBATT     date time
 SENSE    : Low|High
 LOTRANS  : 180.0 Volts
 HITRANS  : 260.0 Volts
@@ -56,6 +57,7 @@ ALARMDEL : No alarm|30 Seconds
 
 LASTXFER : Unacceptable line voltage changes
 | No transfers since turnon
+| Automatic or explicit self test
 
 NUMXFERS : 0
 
