@@ -96,7 +96,8 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_sensitivity",
-			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations.\n Unknown=0, Low=1, Medium=2, High=3, 'Auto Adjust'=4",
+			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations.\n" +
+				"Unknown=0, Low=1, Medium=2, High=3, 'Auto Adjust'=4",
 		}),
 		OutputKey: "SENSE",
 		Type:      "valueMap",
@@ -373,7 +374,8 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_alarm_mode",
-			Help: "**ALARMDEL** The delay period for the UPS alarm. 'No alarm'=0, 'Always'=1, '5 Seconds'=2, '30 Seconds'=3, 'Low Battery'=4",
+			Help: "**ALARMDEL** The delay period for the UPS alarm.\n" +
+				"'No alarm'=0, 'Always'=1, '5 Seconds'=2, '30 Seconds'=3, 'Low Battery'=4",
 		}),
 		OutputKey: "ALARMDEL",
 		Type:      "valueMap",
@@ -390,7 +392,11 @@ var Metrics = []*Metric{
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_selftest_result",
-			Help: "**SELFTEST** The results of the last self test, and may have the following values: NO=0 (No results i.e. no self test performed in the last 5 minutes), OK=1 (self test indicates good battery), BT=2 (self test failed due to insufficient battery capacity), NG=3 (self test failed due to overload)",
+			Help: "**SELFTEST** The results of the last self test, and may have the following values.\n" +
+				"NO=0 No results i.e. no self test performed in the last 5 minutes,\n" +
+				"OK=1 self test indicates good battery,\n" +
+				"BT=2 self test failed due to insufficient battery capacity,\n" +
+				"NG=3 self test failed due to overload",
 		}),
 		OutputKey: "SELFTEST",
 		Type:      "valueMap",
