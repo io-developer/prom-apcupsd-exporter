@@ -20,7 +20,7 @@ func CollectLoop(upscBinary string, addr string, interval time.Duration) {
 func Collect(apcaccessPath string, addr string) {
 	promLog.Infoln("CollectMetrics()")
 
-	cmdResult, err := exec.Command(apcaccessPath, "status", addr, "-u").Output()
+	cmdResult, err := exec.Command(apcaccessPath, "status", addr).Output()
 	if err != nil {
 		promLog.Fatal(err)
 	}
