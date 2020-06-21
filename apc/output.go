@@ -1,7 +1,7 @@
 package apc
 
 import (
-	"math"
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -30,12 +30,28 @@ func (o *Output) Parse() {
 	}
 }
 
-// GetFloat64 value
-func (o *Output) GetFloat64(name string) (val float64, exists bool) {
-	str, exists := o.Parsed[name]
-	if exists && str != "" {
-		val, _ := strconv.ParseFloat(str, 64)
-		return val, true
+// ParseCommon ..
+func ParseCommon(raw string) (val float64, err error) {
+	val, err = ParseSeconds(raw)
+	if err == nil {
+		return
 	}
-	return math.NaN(), false
+	val, err = ParseUnixtime(raw)
+	if err == nil {
+		return
+	}
+	val, err = strconv.ParseFloat(raw, 64)
+	return
+}
+
+// ParseSeconds ..
+func ParseSeconds(raw string) (val float64, err error) {
+	val, err = strconv.ParseFloat(raw, 64)
+	err = errors.New("Not implemented")
+	return
+}
+
+// ParseUnixtime ..
+func ParseUnixtime(raw string) (val float64, err error) {
+	return -1, errors.New("Not implemented")
 }

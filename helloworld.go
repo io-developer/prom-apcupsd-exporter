@@ -53,6 +53,7 @@ var (
 )
 
 func main() {
+
 	prometheus.MustRegister(gaugeFunc)
 	prometheus.MustRegister(gaugeVec)
 	prometheus.MustRegister(histogram)

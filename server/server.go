@@ -1,7 +1,7 @@
 package server
 
 import (
-	"local/apcupsd_exporter/collect"
+	"local/apcupsd_exporter/metric"
 	"net/http"
 	"time"
 
@@ -11,8 +11,8 @@ import (
 
 // ListenAndServe ..
 func ListenAndServe(listenAddr string, upsAddr string, apcaccessPath string) {
-	collect.MetricsRegister()
-	go collect.CollectMetricsLoop(apcaccessPath, upsAddr, 5*time.Second)
+	metric.RegisterPermanents()
+	go metric.CollectLoop(apcaccessPath, upsAddr, 5*time.Second)
 
 	promLog.Infoln("Starting exporter at", listenAddr)
 	promLog.Infoln("Watching ups", upsAddr)
