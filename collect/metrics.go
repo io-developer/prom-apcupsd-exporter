@@ -57,22 +57,6 @@ DWAKE    : 0 Seconds
 	immediate emergency shutdown.
 NUMXFERS : 0
 RETPCT   : 0.0 Percent
-
-
-
-ALARMDEL : No alarm|30 Seconds
-
-LASTXFER : Unacceptable line voltage changes
-| No transfers since turnon
-| Automatic or explicit self test
-
-
-SELFTEST : NO
-STESTI   : None|14 days
-STATFLAG : 0x05000008
-SERIALNO : 4B1802P05216
-FIRMWARE : 808.q10 .I USB FW:q
-
 **HUMIDITY**
 	The humidity as measured by the UPS.
 
@@ -85,7 +69,24 @@ FIRMWARE : 808.q10 .I USB FW:q
     the remaining runtime more accurately.
 
 **BADBATTS**
-    The number of bad battery packs.
+	The number of bad battery packs.
+
+ALARMDEL : No alarm|30 Seconds
+SELFTEST : NO
+STATFLAG : 0x05000008
+STESTI   : None|14 days
+
+
+
+LASTXFER : Unacceptable line voltage changes
+| No transfers since turnon
+| Automatic or explicit self test
+
+
+
+SERIALNO : 4B1802P05216
+FIRMWARE : 808.q10 .I USB FW:q
+
 */
 
 // Metrics declare
@@ -211,6 +212,20 @@ var Metrics = []*Metric{
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_battery_externals",
+			Help: "**EXTBATTS** The number of external batteries as defined by the user. A correct number here helps the UPS compute the remaining runtime more accurately.",
+		}),
+		OutputKey: "EXTBATTS",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_battery_bads",
+			Help: "**BADBATTS** The number of bad battery packs.",
+		}),
+		OutputKey: "BADBATTS",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_replaced_timestamp",
 			Help: "**BATTDATE** The date that batteries were last replaced.",
 		}),
@@ -262,14 +277,6 @@ var Metrics = []*Metric{
 		}),
 		OutputKey: "REG3",
 	},
-
-	{
-		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_temp_internal",
-			Help: "**ITEMP** (Celsius) Internal UPS temperature as supplied by the UPS.",
-		}),
-		OutputKey: "ITEMP",
-	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_timeleft",
@@ -288,7 +295,7 @@ var Metrics = []*Metric{
 	},
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_transfer_onbattery_count",
+			Name: "apcupsd_ups_transfer_onbattery",
 			Help: "**NUMXFERS** The number of transfers to batteries since apcupsd startup.",
 		}),
 		OutputKey: "NUMXFERS",
@@ -335,13 +342,71 @@ var Metrics = []*Metric{
 		}),
 		OutputKey: "RETPCT",
 	},
-
 	{
 		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_turnoff_delay",
 			Help: "**DSHUTD** (seconds) The grace delay that the UPS gives after receiving a power down command from apcupsd before it powers off your equipment.",
 		}),
 		OutputKey: "DSHUTD",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_temp_internal",
+			Help: "**ITEMP** (Celsius) Internal UPS temperature as supplied by the UPS.",
+		}),
+		OutputKey: "ITEMP",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_temp_ambient",
+			Help: "**AMBTEMP** The ambient temperature as measured by the UPS.",
+		}),
+		OutputKey: "AMBTEMP",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_humidity",
+			Help: "**HUMIDITY** The humidity as measured by the UPS.",
+		}),
+		OutputKey: "HUMIDITY",
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_alarm_mode",
+			Help: "**ALARMDEL** The delay period for the UPS alarm. 'No alarm'=0, 'Always'=1, '5 Seconds'=2, '30 Seconds'=3, 'Low Battery'=4",
+		}),
+		OutputKey: "ALARMDEL",
+		Type:      "valueMap",
+		ValueMap: map[string]float64{
+			"No alarm":    0,
+			"Always":      1,
+			"5 Seconds":   2,
+			"5":           2,
+			"30 Seconds":  3,
+			"30":          3,
+			"Low Battery": 4,
+		},
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_selftest_result",
+			Help: "**SELFTEST** The results of the last self test, and may have the following values: NO=0 (No results i.e. no self test performed in the last 5 minutes), OK=1 (self test indicates good battery), BT=2 (self test failed due to insufficient battery capacity), NG=3 (self test failed due to overload)",
+		}),
+		OutputKey: "SELFTEST",
+		Type:      "valueMap",
+		ValueMap: map[string]float64{
+			"NO": 0,
+			"OK": 1,
+			"BT": 2,
+			"NG": 3,
+		},
+	},
+	{
+		Gauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_selftest_interval",
+			Help: "**STESTI** The interval in seconds between automatic self tests.",
+		}),
+		OutputKey: "STESTI",
 	},
 
 	// Shutdown
