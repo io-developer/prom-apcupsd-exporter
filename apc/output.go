@@ -92,7 +92,7 @@ func ParseUnixtime(raw string) (val float64, err error) {
 
 // ParseNumber ..
 func ParseNumber(raw string) (val float64, err error) {
-	numStr := regexp.MustCompile(`^[-+]?\d[\d.,]+`).FindString(raw)
+	numStr := regexp.MustCompile(`^[-+]?\d[\d.,]*`).FindString(raw)
 	if numStr != "" {
 		return strconv.ParseFloat(numStr, 64)
 	}
