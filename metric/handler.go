@@ -4,6 +4,7 @@ import (
 	"local/apcupsd_exporter/apc"
 
 	"github.com/prometheus/client_golang/prometheus"
+	promLog "github.com/prometheus/common/log"
 )
 
 // Handler ..
@@ -34,8 +35,30 @@ func (h DefaultHandler) Handle(metric *Metric, output *apc.Output) {
 		return
 	}
 	val := h.Mapper.Map(raw, metric.DefaultValue)
+
 	metric.Register()
 	if gauge, ok := metric.Collector.(prometheus.Gauge); ok {
 		gauge.Set(val)
+	}
+}
+
+// StatusComponentHandler ..
+type StatusComponentHandler struct {
+	Handler
+}
+
+// Handle ..
+func (h StatusComponentHandler) Handle(metric *Metric, output *apc.Output) {
+	currentFlags := map[string]uint64{}
+	if raw, exists := output.Parsed["STATFLAG"]; exists {
+		currentFlags = apc.ParseStatFlags(raw)
+		promLog.Infoln("  currentFlags", currentFlags)
+	}
+
+	metric.Register()
+	if gaugeVec, ok := metric.Collector.(*prometheus.GaugeVec); ok {
+		for flagName, flagVal := range currentFlags {
+			gaugeVec.WithLabelValues(flagName).Set(float64(flagVal))
+		}
 	}
 }

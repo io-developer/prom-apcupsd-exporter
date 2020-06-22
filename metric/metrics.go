@@ -259,6 +259,13 @@ var Metrics = []*Metric{
 		Handler: NewDefaultHandler("STATFLAG"),
 	},
 	{
+		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_status_component",
+			Help: "**STATFLAG** Component",
+		}, []string{"flag"}),
+		Handler: StatusComponentHandler{},
+	},
+	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_dip_switch_flag",
 			Help: "**DIPSW** The current dip switch settings on UPSes that have them.",
