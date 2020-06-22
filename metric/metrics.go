@@ -1,6 +1,10 @@
 package metric
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 /*
 input.sensitivity: high
@@ -253,17 +257,47 @@ var Metrics = []*Metric{
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_flag",
-			Help: "**STATFLAG** Status flag. English version is given by STATUS.",
+			Name: "apcupsd_ups_status_flags",
+			Help: "**STATFLAG** Current status flags",
 		}),
 		Handler: NewDefaultHandler("STATFLAG"),
 	},
 	{
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_component",
-			Help: "**STATFLAG** Component",
+			Name: "apcupsd_ups_status",
+			Help: "**STATFLAG** Labeled current status flags",
 		}, []string{"flag"}),
 		Handler: StatusComponentHandler{},
+	},
+	{
+		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
+			Name:       "apcupsd_ups_status_trace_1m",
+			Help:       "Labeled flags active for last 1 minute ({quantile=1} > 0)",
+			MaxAge:     1 * time.Minute,
+			AgeBuckets: 2,
+			Objectives: map[float64]float64{1: 0},
+		}, []string{"flag"}),
+		Handler: StatusTraceComponentHandler{},
+	},
+	{
+		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
+			Name:       "apcupsd_ups_status_trace_3m",
+			Help:       "Labeled flags active for last 3 minutes ({quantile=1} > 0)",
+			MaxAge:     3 * time.Minute,
+			AgeBuckets: 2,
+			Objectives: map[float64]float64{1: 0},
+		}, []string{"flag"}),
+		Handler: StatusTraceComponentHandler{},
+	},
+	{
+		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
+			Name:       "apcupsd_ups_status_trace_10m",
+			Help:       "Labeled flags active for last 10 minutes ({quantile=1} > 0)",
+			MaxAge:     10 * time.Minute,
+			AgeBuckets: 2,
+			Objectives: map[float64]float64{1: 0},
+		}, []string{"flag"}),
+		Handler: StatusTraceComponentHandler{},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
