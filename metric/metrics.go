@@ -97,17 +97,17 @@ var Metrics = []*Metric{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_sensitivity",
 			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations." +
-				" Unknown=0, Low=1, Medium=2, High=3, 'Auto Adjust'=4",
+				" Low=1, Medium=2, High=3, 'Auto Adjust'=4, Unknown=5",
 		}),
 		Handler: DefaultHandler{
 			ApcKey: "SENSE",
 			Mapper: DictMapper{
 				Dict: map[string]float64{
-					"Unknown":     0,
 					"Low":         1,
 					"Medium":      2,
 					"High":        3,
 					"Auto Adjust": 4,
+					"Unknown":     5,
 				},
 			},
 		},
@@ -381,19 +381,19 @@ var Metrics = []*Metric{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_alarm_mode",
 			Help: "**ALARMDEL** The delay period for the UPS alarm.\n" +
-				"'No alarm'=0, 'Always'=1, '5 Seconds'=2, '30 Seconds'=3, 'Low Battery'=4",
+				"'No alarm'=1, 'Always'=2, '5 Seconds'=3, '30 Seconds'=4, 'Low Battery'=5",
 		}),
 		Handler: DefaultHandler{
 			ApcKey: "ALARMDEL",
 			Mapper: DictMapper{
 				Dict: map[string]float64{
-					"No alarm":    0,
-					"Always":      1,
-					"5 Seconds":   2,
-					"5":           2,
-					"30 Seconds":  3,
-					"30":          3,
-					"Low Battery": 4,
+					"No alarm":    1,
+					"Always":      2,
+					"5 Seconds":   3,
+					"5":           3,
+					"30 Seconds":  4,
+					"30":          4,
+					"Low Battery": 5,
 				},
 			},
 		},
