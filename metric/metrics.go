@@ -22,13 +22,16 @@ DATE     : 2020-06-18 16:56:59 +0300
 HOSTNAME : home-nas
 VERSION  : 3.14.14 (31 May 2016) debian
 UPSNAME  : HomeSrv
-CABLE    : USB Cable
-DRIVER   : USB UPS Driver
-UPSMODE  : Stand Alone
 STARTTIME: 2020-06-18 02:00:02 +0300
 MODEL    : Back-UPS CS 500
 STATUS   : ONLINE
+SERIALNO : 4B1802P05216
+FIRMWARE : 808.q10 .I USB FW:q
 
+
+CABLE    : USB Cable
+DRIVER   : USB UPS Driver
+UPSMODE  : Stand Alone
 LINEV    : 226.0 Volts
 LOADPCT  : 7.0 Percent
 BCHARGE  : 100.0 Percent
@@ -63,33 +66,21 @@ NUMXFERS : 0
 RETPCT   : 0.0 Percent
 **HUMIDITY**
 	The humidity as measured by the UPS.
-
 **AMBTEMP**
     The ambient temperature as measured by the UPS.
-
 **EXTBATTS**
     The number of external batteries as
     defined by the user. A correct number here helps the UPS compute
     the remaining runtime more accurately.
-
 **BADBATTS**
 	The number of bad battery packs.
-
 ALARMDEL : No alarm|30 Seconds
 SELFTEST : NO
 STATFLAG : 0x05000008
 STESTI   : None|14 days
-
-
-
 LASTXFER : Unacceptable line voltage changes
 | No transfers since turnon
 | Automatic or explicit self test
-
-
-
-SERIALNO : 4B1802P05216
-FIRMWARE : 808.q10 .I USB FW:q
 
 */
 
@@ -345,6 +336,35 @@ var Metrics = []*Metric{
 			Help: "**NUMXFERS** The number of transfers to batteries since apcupsd startup.",
 		}),
 		Handler: NewDefaultHandler("NUMXFERS"),
+	},
+	{
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_transfer_onbattery_reason",
+			Help: "**LASTXFER** The reason for the last transfer to batteries." +
+				" 'No transfers since turnon'=1," +
+				" 'Automatic or explicit self test'=2," +
+				" 'Forced by software'=3," +
+				" 'Low line voltage'=4," +
+				" 'High line voltage'=5," +
+				" 'Unacceptable line voltage changes'=6," +
+				" 'Line voltage notch or spike'=7," +
+				" 'Input frequency out of range'=8," +
+				" 'UNKNOWN EVENT'=9",
+		}),
+		Handler: DefaultHandler{
+			ApcKey: "LASTXFER",
+			ValueMap: map[string]float64{
+				"No transfers since turnon":         1,
+				"Automatic or explicit self test":   2,
+				"Forced by software":                3,
+				"Low line voltage":                  4,
+				"High line voltage":                 5,
+				"Unacceptable line voltage changes": 6,
+				"Line voltage notch or spike":       7,
+				"Input frequency out of range":      8,
+				"UNKNOWN EVENT":                     9,
+			},
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
