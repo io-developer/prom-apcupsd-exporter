@@ -14,26 +14,31 @@ type Handler interface {
 // DefaultHandler ..
 type DefaultHandler struct {
 	Handler
-	ApcKey string
-	Mapper Mapper
+	ApcKey   string
+	ValueMap map[string]float64
 }
 
 // NewDefaultHandler ..
 func NewDefaultHandler(apcKey string) DefaultHandler {
-	return DefaultHandler{
-		ApcKey: apcKey,
-		Mapper: DefaultMapper{},
-	}
+	return DefaultHandler{ApcKey: apcKey}
 }
 
 // Handle ..
 func (h DefaultHandler) Handle(metric *Metric, output *apc.Output) {
-	raw, exists := output.Parsed[h.ApcKey]
-	if !exists && !metric.IsPermanent {
+	raw := output.GetParsed(h.ApcKey, "")
+	if raw == "" && !metric.IsPermanent {
 		metric.Unregister()
 		return
 	}
-	val := h.Mapper.Map(raw, metric.DefaultValue)
+
+	val := metric.DefaultValue
+	if h.ValueMap != nil {
+		if mapped, exists := h.ValueMap[raw]; exists {
+			val = mapped
+		}
+	} else if parsed, err := apc.ParseCommon(raw); err == nil {
+		val = parsed
+	}
 
 	metric.Register()
 	if gauge, ok := metric.Collector.(prometheus.Gauge); ok {
