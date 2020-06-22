@@ -32,6 +32,14 @@ func (o *Output) Parse() {
 	}
 }
 
+// GetParsed method
+func (o *Output) GetParsed(key string, def string) string {
+	if val, exists := o.Parsed[key]; exists {
+		return val
+	}
+	return def
+}
+
 // ParseCommon ..
 func ParseCommon(raw string) (val float64, err error) {
 	val, err = ParseSeconds(raw)
@@ -84,12 +92,16 @@ func ParseUnixtime(raw string) (val float64, err error) {
 
 // ParseNumber ..
 func ParseNumber(raw string) (val float64, err error) {
-	re := regexp.MustCompile(`^[-+]?\s*\d[\d.,]+`)
-	numStr := re.FindString(raw)
-	if numStr == "" {
-		return 0, errors.New("Empty text")
+	numStr := regexp.MustCompile(`^[-+]?\d[\d.,]+`).FindString(raw)
+	if numStr != "" {
+		return strconv.ParseFloat(numStr, 64)
 	}
-	return strconv.ParseFloat(numStr, 64)
+	hexStr := regexp.MustCompile(`^0x[0-9a-fA-F]+`).FindString(raw)
+	if hexStr != "" {
+		intVal, err := strconv.ParseUint(raw, 0, 64)
+		return float64(intVal), err
+	}
+	return 0, errors.New("None number parsed")
 }
 
 // StatFlags map
