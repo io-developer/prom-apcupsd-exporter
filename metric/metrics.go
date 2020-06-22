@@ -96,8 +96,8 @@ var Metrics = []*Metric{
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_sensitivity",
-			Help: `**SENSE** The sensitivity level of the UPS to line voltage fluctuations.
-					Unknown=0, Low=1, Medium=2, High=3, 'Auto Adjust'=4`,
+			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations." +
+				" Unknown=0, Low=1, Medium=2, High=3, 'Auto Adjust'=4",
 		}),
 		Handler: DefaultHandler{
 			ApcKey: "SENSE",
@@ -169,6 +169,13 @@ var Metrics = []*Metric{
 			Help: "**LOADPCT** The percentage of load capacity as estimated by the UPS.",
 		}),
 		Handler: NewDefaultHandler("LOADPCT"),
+	},
+	{
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_output_amps",
+			Help: "**OUTCURNT** Amps",
+		}),
+		Handler: NewDefaultHandler("OUTCURNT"),
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -394,20 +401,26 @@ var Metrics = []*Metric{
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_selftest_result",
-			Help: "**SELFTEST** The results of the last self test, and may have the following values.\n" +
-				"NO=0 No results i.e. no self test performed in the last 5 minutes,\n" +
-				"OK=1 self test indicates good battery,\n" +
-				"BT=2 self test failed due to insufficient battery capacity,\n" +
-				"NG=3 self test failed due to overload",
+			Help: "**SELFTEST** The results of the last self test, and may have the following values." +
+				" NO=1 No results i.e. no self test performed in the last 5 minutes," +
+				" OK=2 self test indicates good battery," +
+				" BT=3 self test failed due to insufficient battery capacity," +
+				" NG=4 self test failed due to overload," +
+				" IP=5 INPROGRESS," +
+				" WN=6 WARNING," +
+				" ??=7 UNKNOWN",
 		}),
 		Handler: DefaultHandler{
 			ApcKey: "SELFTEST",
 			Mapper: DictMapper{
 				Dict: map[string]float64{
-					"NO": 0,
-					"OK": 1,
-					"BT": 2,
-					"NG": 3,
+					"NO": 1,
+					"OK": 2,
+					"BT": 3,
+					"NG": 4,
+					"IP": 5,
+					"WN": 6,
+					"??": 7,
 				},
 			},
 		},
@@ -418,6 +431,105 @@ var Metrics = []*Metric{
 			Help: "**STESTI** The interval in seconds between automatic self tests.",
 		}),
 		Handler: NewDefaultHandler("STESTI"),
+	},
+	{
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_cable",
+			Help: "**CABLE** The cable as specified in the configuration file ('UPSCABLE')." +
+				" 'Custom Cable Simple'=1," +
+				" 'APC Cable 940-0119A'=2," +
+				" 'APC Cable 940-0127A'=3," +
+				" 'APC Cable 940-0128A'=4," +
+				" 'APC Cable 940-0020B'=5," +
+				" 'APC Cable 940-0020C'=6," +
+				" 'APC Cable 940-0023A'=7," +
+				" 'MAM Cable 04-02-2000'=8," +
+				" 'APC Cable 940-0095A'=9," +
+				" 'APC Cable 940-0095B'=10," +
+				" 'APC Cable 940-0095C'=11," +
+				" 'Custom Cable Smart'=12," +
+				" 'APC Cable 940-0024B'=121," +
+				" 'APC Cable 940-0024C'=122," +
+				" 'APC Cable 940-1524C'=123," +
+				" 'APC Cable 940-0024G'=124," +
+				" 'APC Cable 940-0625A'=125," +
+				" 'Ethernet Link'=13," +
+				" 'USB Cable'=14",
+		}),
+		Handler: DefaultHandler{
+			ApcKey: "CABLE",
+			Mapper: DictMapper{
+				Dict: map[string]float64{
+					"Custom Cable Simple":  1,
+					"APC Cable 940-0119A":  2,
+					"APC Cable 940-0127A":  3,
+					"APC Cable 940-0128A":  4,
+					"APC Cable 940-0020B":  5,
+					"APC Cable 940-0020C":  6,
+					"APC Cable 940-0023A":  7,
+					"MAM Cable 04-02-2000": 8,
+					"APC Cable 940-0095A":  9,
+					"APC Cable 940-0095B":  10,
+					"APC Cable 940-0095C":  11,
+					"Custom Cable Smart":   12,
+					"APC Cable 940-0024B":  121,
+					"APC Cable 940-0024C":  122,
+					"APC Cable 940-1524C":  123,
+					"APC Cable 940-0024G":  124,
+					"APC Cable 940-0625A":  125,
+					"Ethernet Link":        13,
+					"USB Cable":            14,
+				},
+			},
+		},
+	},
+	{
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_driver",
+			Help: "**DRIVER** type." +
+				" 'DUMB UPS Driver'=1," +
+				" 'APC Smart UPS (any)'=2," +
+				" 'USB UPS Driver'=3," +
+				" 'NETWORK UPS Driver'=4," +
+				" 'TEST UPS Driver'=5," +
+				" 'PCNET UPS Driver'=6," +
+				" 'SNMP UPS Driver'=7," +
+				" 'MODBUS UPS Driver'=8",
+		}),
+		Handler: DefaultHandler{
+			ApcKey: "DRIVER",
+			Mapper: DictMapper{
+				Dict: map[string]float64{
+					"DUMB UPS Driver":     1,
+					"APC Smart UPS (any)": 2,
+					"USB UPS Driver":      3,
+					"NETWORK UPS Driver":  4,
+					"TEST UPS Driver":     5,
+					"PCNET UPS Driver":    6,
+					"SNMP UPS Driver":     7,
+					"MODBUS UPS Driver":   8,
+				},
+			},
+		},
+	},
+	{
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_mode",
+			Help: "**UPSMODE** The mode in which apcupsd is operating as specified in the configuration file ('UPSMODE')." +
+				" 'Stand Alone'=1," +
+				" 'ShareUPS Slave'=2," +
+				" 'ShareUPS Master'=3",
+		}),
+		Handler: DefaultHandler{
+			ApcKey: "UPSMODE",
+			Mapper: DictMapper{
+				Dict: map[string]float64{
+					"Stand Alone":     1,
+					"ShareUPS Slave":  2,
+					"ShareUPS Master": 3,
+				},
+			},
+		},
 	},
 
 	// Shutdown
