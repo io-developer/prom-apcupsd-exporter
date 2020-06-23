@@ -6,6 +6,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	dto "github.com/prometheus/client_model/go"
 	promLog "github.com/prometheus/common/log"
 )
 
@@ -20,6 +21,10 @@ var (
 	gaugeVec = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "aaa_gauge_vec",
 	}, []string{"now"})
+
+	counter = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "aaa_counter",
+	})
 
 	histogram = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:        "aaa_histogram",
@@ -108,6 +113,18 @@ func updateMetrics() {
 	summaryVec.With(prometheus.Labels{"now": "s7=0"}).Observe(secDivs[7])
 	summaryVec.With(prometheus.Labels{"now": "s13=0"}).Observe(secDivs[17])
 	summaryVec.With(prometheus.Labels{"now": "s37=0"}).Observe(secDivs[37])
+
+	counter.Inc()
+
+	promLog.Infof("dto counter: %#v", readDto(counter).GetCounter().GetValue())
+	promLog.Infof("dto gaugeFunc: %#v", readDto(gaugeFunc).GetGauge().GetValue())
+	promLog.Infof("dto gaugeVec: %#v", readDto(gaugeVec.GetMetricWith()))
+}
+
+func readDto(m prometheus.Metric) *dto.Metric {
+	pb := &dto.Metric{}
+	m.Write(pb)
+	return pb
 }
 
 func updateMetricsLoop() {
@@ -122,6 +139,7 @@ func updateMetricsLoop() {
 func main() {
 	prometheus.MustRegister(gaugeFunc)
 	prometheus.MustRegister(gaugeVec)
+	prometheus.MustRegister(counter)
 	prometheus.MustRegister(histogram)
 	prometheus.MustRegister(summary)
 	prometheus.MustRegister(summaryQuantile)

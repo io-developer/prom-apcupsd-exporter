@@ -1,8 +1,6 @@
 package metric
 
 import (
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -245,48 +243,25 @@ var Metrics = []*Metric{
 		Handler: NewDefaultHandler("MANDATE"),
 	},
 	{
-		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_flags",
-			Help: "**STATFLAG** Current status flags",
-		}),
-		Handler: NewDefaultHandler("STATFLAG"),
+		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_status",
+			Help: "Current status vec labeled by flag. Value 0 or 1",
+		}, []string{"flag"}),
+		Handler: StatusHandler{},
 	},
 	{
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status",
-			Help: "**STATFLAG** Labeled current status flags",
+			Name: "apcupsd_ups_status_hex",
+			Help: "Current status vec labeled by flag. Value 0 or hex of single flag",
 		}, []string{"flag"}),
-		Handler: StatusComponentHandler{},
+		Handler: StatusHexHandler{},
 	},
 	{
-		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
-			Name:       "apcupsd_ups_status_trace_1m",
-			Help:       "Labeled flags active for last 1 minute ({quantile=1} > 0)",
-			MaxAge:     1 * time.Minute,
-			AgeBuckets: 2,
-			Objectives: map[float64]float64{1: 0},
-		}, []string{"flag"}),
-		Handler: StatusTraceComponentHandler{},
-	},
-	{
-		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
-			Name:       "apcupsd_ups_status_trace_3m",
-			Help:       "Labeled flags active for last 3 minutes ({quantile=1} > 0)",
-			MaxAge:     3 * time.Minute,
-			AgeBuckets: 2,
-			Objectives: map[float64]float64{1: 0},
-		}, []string{"flag"}),
-		Handler: StatusTraceComponentHandler{},
-	},
-	{
-		Collector: prometheus.NewSummaryVec(prometheus.SummaryOpts{
-			Name:       "apcupsd_ups_status_trace_10m",
-			Help:       "Labeled flags active for last 10 minutes ({quantile=1} > 0)",
-			MaxAge:     10 * time.Minute,
-			AgeBuckets: 2,
-			Objectives: map[float64]float64{1: 0},
-		}, []string{"flag"}),
-		Handler: StatusTraceComponentHandler{},
+		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_status_flag",
+			Help: "**STATFLAG** Current status flag (summary hex number)",
+		}),
+		Handler: NewDefaultHandler("STATFLAG"),
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{

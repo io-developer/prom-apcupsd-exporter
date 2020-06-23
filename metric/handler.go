@@ -2,6 +2,8 @@ package metric
 
 import (
 	"local/apcupsd_exporter/apc"
+	"local/apcupsd_exporter/model"
+	"math"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -46,38 +48,36 @@ func (h DefaultHandler) Handle(metric *Metric, output *apc.Output) {
 	}
 }
 
-// StatusComponentHandler ..
-type StatusComponentHandler struct {
+// StatusHandler ..
+type StatusHandler struct {
 	Handler
 }
 
 // Handle ..
-func (h StatusComponentHandler) Handle(metric *Metric, output *apc.Output) {
-	currentFlags := apc.ParseStatFlags(output.GetParsed("STATFLAG", ""))
+func (h StatusHandler) Handle(metric *Metric, output *apc.Output) {
+	currentFlags := apc.ParseFlags(output.GetParsed("STATFLAG", ""), model.StatusFlags)
+
+	metric.Register()
+	if gaugeVec, ok := metric.Collector.(*prometheus.GaugeVec); ok {
+		for flagName, flagVal := range currentFlags {
+			gaugeVec.WithLabelValues(flagName).Set(math.Min(1.0, float64(flagVal)))
+		}
+	}
+}
+
+// StatusHexHandler ..
+type StatusHexHandler struct {
+	Handler
+}
+
+// Handle ..
+func (h StatusHexHandler) Handle(metric *Metric, output *apc.Output) {
+	currentFlags := apc.ParseFlags(output.GetParsed("STATFLAG", ""), model.StatusFlags)
 
 	metric.Register()
 	if gaugeVec, ok := metric.Collector.(*prometheus.GaugeVec); ok {
 		for flagName, flagVal := range currentFlags {
 			gaugeVec.WithLabelValues(flagName).Set(float64(flagVal))
-		}
-	}
-}
-
-// StatusTraceComponentHandler ..
-type StatusTraceComponentHandler struct {
-	Handler
-}
-
-// Handle ..
-func (h StatusTraceComponentHandler) Handle(metric *Metric, output *apc.Output) {
-	currentFlags := apc.ParseStatFlags(output.GetParsed("STATFLAG", ""))
-
-	metric.Register()
-	if summaryVec, ok := metric.Collector.(*prometheus.SummaryVec); ok {
-		for flagName, flagVal := range currentFlags {
-			if flagVal > 0 {
-				summaryVec.WithLabelValues(flagName).Observe(float64(flagVal))
-			}
 		}
 	}
 }
