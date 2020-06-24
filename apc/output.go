@@ -34,7 +34,7 @@ func (o *Output) Parse() {
 
 // GetParsed method
 func (o *Output) GetParsed(key string, def string) string {
-	return Get(key, def)
+	return o.Get(key, def)
 }
 
 // Get ..
@@ -45,10 +45,40 @@ func (o *Output) Get(key string, def string) string {
 	return def
 }
 
-// GetNumber ..
-func (o *Output) GetNumber(key string, def float64) float64 {
+// GetFloat ..
+func (o *Output) GetFloat(key string, def float64) float64 {
 	if raw, exists := o.Parsed[key]; exists {
 		if val, err := ParseNumber(raw); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetInt ..
+func (o *Output) GetInt(key string, def int64) int64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := strconv.ParseInt(raw, 0, 64); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetUint ..
+func (o *Output) GetUint(key string, def uint64) uint64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := strconv.ParseUint(raw, 0, 64); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetTime ..
+func (o *Output) GetTime(key string, def time.Time) time.Time {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := ParseTime(raw); err == nil {
 			return val
 		}
 	}
@@ -153,6 +183,12 @@ func ParseUnixtime(raw string) (val float64, err error) {
 
 // ParseUnixtimeInt64 ..
 func ParseUnixtimeInt64(raw string) (val int64, err error) {
+	time, err := ParseTime(raw)
+	return time.Unix(), nil
+}
+
+// ParseTime ..
+func ParseTime(raw string) (val time.Time, err error) {
 	t, err := time.Parse("2006-01-02 15:04:05 -0700", raw)
 	if err != nil {
 		t, err = time.Parse("2006-01-02 15:04:05", raw)
@@ -161,9 +197,9 @@ func ParseUnixtimeInt64(raw string) (val int64, err error) {
 		t, err = time.Parse("2006-01-02", raw)
 	}
 	if err != nil {
-		return 0, err
+		return t, err
 	}
-	return t.Unix(), nil
+	return t, nil
 }
 
 // ParseNumber ..
