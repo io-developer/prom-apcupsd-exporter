@@ -34,8 +34,72 @@ func (o *Output) Parse() {
 
 // GetParsed method
 func (o *Output) GetParsed(key string, def string) string {
+	return Get(key, def)
+}
+
+// Get ..
+func (o *Output) Get(key string, def string) string {
 	if val, exists := o.Parsed[key]; exists {
 		return val
+	}
+	return def
+}
+
+// GetNumber ..
+func (o *Output) GetNumber(key string, def float64) float64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := ParseNumber(raw); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetUnixtime ..
+func (o *Output) GetUnixtime(key string, def int64) int64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := ParseUnixtimeInt64(raw); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetSeconds ..
+func (o *Output) GetSeconds(key string, def int64) int64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if val, err := ParseSecondsInt64(raw); err == nil {
+			return val
+		}
+	}
+	return def
+}
+
+// GetFlags ..
+func (o *Output) GetFlags(key string, baseFlags map[string]uint64) map[string]uint64 {
+	raw, exists := o.Parsed[key]
+	if !exists {
+		raw = ""
+	}
+	return ParseFlags(raw, baseFlags)
+}
+
+// GetMapped ..
+func (o *Output) GetMapped(key string, kvMap map[string]interface{}, def uint64) interface{} {
+	if raw, exists := o.Parsed[key]; exists {
+		if mapped, mappedExists := kvMap[raw]; mappedExists {
+			return mapped
+		}
+	}
+	return def
+}
+
+// GetMappedUint64 ..
+func (o *Output) GetMappedUint64(key string, kvMap map[string]uint64, def uint64) uint64 {
+	if raw, exists := o.Parsed[key]; exists {
+		if mapped, mappedExists := kvMap[raw]; mappedExists {
+			return mapped
+		}
 	}
 	return def
 }
@@ -75,10 +139,10 @@ func ParseSeconds(raw string) (val float64, err error) {
 	return val * mult, err
 }
 
-// ParseSecondsUint64 ..
-func ParseSecondsUint64(raw string) (val uint64, err error) {
+// ParseSecondsInt64 ..
+func ParseSecondsInt64(raw string) (val int64, err error) {
 	valf64, err := ParseSeconds(raw)
-	return uint64(valf64), err
+	return int64(valf64), err
 }
 
 // ParseUnixtime ..
