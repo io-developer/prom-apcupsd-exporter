@@ -39,7 +39,7 @@ type State struct {
 	UpsReg2                        uint64
 	UpsReg3                        uint64
 	UpsTimeleft                    uint64
-	UpsTimeleftLowBattery          uint64
+	UpsTimeleftLowBattery          int64
 	UpsTransferOnBatteryCount      uint64
 	UpsTransferOnBatteryReason     UpsTransferOnbatteryReason
 	UpsTransferOnBatteryReasonText string
@@ -47,23 +47,23 @@ type State struct {
 	UpsTransferOffBatteryTimestamp int64
 	UpsOnBatterySeconds            uint64
 	UpsOnBatterySecondsCumulative  uint64
-	UpsTurnOffDelaySeconds         uint64
-	UpsTurnOnDelaySeconds          uint64
+	UpsTurnOffDelaySeconds         int64
+	UpsTurnOnDelaySeconds          int64
 	UpsTurnOnBatteryMin            float64
 	UpsTempInternal                float64
 	UpsTempAmbient                 float64
 	UpsTempHumidity                float64
 	UpsAlarmMode                   UpsAlarmMode
 	UpsSelftestResult              UpsSelftestResult
-	UpsSelftestIntervalSeconds     uint64
+	UpsSelftestIntervalSeconds     int64
 	UpsCable                       UpsCable
 	UpsDriver                      UpsDriver
 	UpsMode                        UpsMode
 
 	// shutdown
 	ShutdownBatteryMin          float64
-	ShutdownTimeleftSecondsMin  uint64
-	ShutdownOnBatterySecondsMax uint64
+	ShutdownTimeleftSecondsMin  int64
+	ShutdownOnBatterySecondsMax int64
 }
 
 // InputSensivity type
