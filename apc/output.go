@@ -75,8 +75,20 @@ func ParseSeconds(raw string) (val float64, err error) {
 	return val * mult, err
 }
 
+// ParseSecondsUint64 ..
+func ParseSecondsUint64(raw string) (val uint64, err error) {
+	valf64, err := ParseSeconds(raw)
+	return uint64(valf64), err
+}
+
 // ParseUnixtime ..
 func ParseUnixtime(raw string) (val float64, err error) {
+	valInt, err := ParseUnixtimeInt64(raw)
+	return float64(valInt), err
+}
+
+// ParseUnixtimeInt64 ..
+func ParseUnixtimeInt64(raw string) (val int64, err error) {
 	t, err := time.Parse("2006-01-02 15:04:05 -0700", raw)
 	if err != nil {
 		t, err = time.Parse("2006-01-02 15:04:05", raw)
@@ -87,7 +99,7 @@ func ParseUnixtime(raw string) (val float64, err error) {
 	if err != nil {
 		return 0, err
 	}
-	return float64(t.Unix()), nil
+	return t.Unix(), nil
 }
 
 // ParseNumber ..
