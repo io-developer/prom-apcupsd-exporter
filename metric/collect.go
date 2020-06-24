@@ -2,6 +2,7 @@ package metric
 
 import (
 	"local/apcupsd_exporter/apc"
+	"local/apcupsd_exporter/model"
 	"os/exec"
 	"time"
 
@@ -43,6 +44,7 @@ func Collect() {
 	output.Parse()
 
 	promLog.Infoln("Output parsed")
+	promLog.Infof("\n\n state: %#v \n\n\n", model.NewStateFromOutput(output))
 
 	for _, metric := range Metrics {
 		metric.Handler.Handle(metric, output)
