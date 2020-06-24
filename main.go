@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"local/apcupsd_exporter/metric"
+	"local/apcupsd_exporter/model"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func main() {
 	promLog.Infoln("Min interval between collect calls:", *collectMinInterval, "sec")
 	promLog.Infoln("Loop interval between collect calls:", *collectLoopInterval, "sec")
 
+	metric.Model = model.NewModel()
 	metric.ApcaccessPath = *apcaccessPath
 	metric.ApcupsdAddr = *upsAddr
 	metric.CollectMinInterval = time.Duration(*collectMinInterval * float64(time.Second))

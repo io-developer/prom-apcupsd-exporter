@@ -66,6 +66,24 @@ type State struct {
 	ShutdownOnBatterySecondsMax int64
 }
 
+// NewState cotructor
+func NewState() *State {
+	return &State{
+		InputSensivity:             Sensivity{},
+		BatteryReplacedDate:        time.Time{},
+		UpsManafacturedDate:        time.Time{},
+		UpsStatus:                  NewStatus(0, ""),
+		UpsTransferOnBatteryReason: TransferOnbatteryReason{},
+		UpsTransferOnBatteryDate:   time.Time{},
+		UpsTransferOffBatteryDate:  time.Time{},
+		UpsAlarmMode:               AlarmMode{},
+		UpsSelftestResult:          SelftestResult{},
+		UpsCable:                   Cable{},
+		UpsDriver:                  Driver{},
+		UpsMode:                    Mode{},
+	}
+}
+
 // Sensivity ..
 type Sensivity struct {
 	Type SensivityType
@@ -235,11 +253,16 @@ func NewStatus(flag uint64, text string) Status {
 	}
 }
 
+// Equal method
+func (s Status) Equal(b Status) bool {
+	return s.Flag == b.Flag && s.Text == b.Text
+}
+
 // GetFlags method
-func (s Status) GetFlags(flag uint64, text string) map[string]uint64 {
+func (s Status) GetFlags() map[string]uint64 {
 	flags := make(map[string]uint64, len(StatusFlags))
 	for flagName, flagVal := range StatusFlags {
-		flags[flagName] = flag & flagVal
+		flags[flagName] = s.Flag & flagVal
 	}
 	return flags
 }

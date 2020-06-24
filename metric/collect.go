@@ -11,6 +11,7 @@ import (
 
 // Vars ..
 var (
+	Model              *model.Model
 	ApcaccessPath      string
 	ApcupsdAddr        string
 	CollectMinInterval time.Duration
@@ -44,7 +45,12 @@ func Collect() {
 	output.Parse()
 
 	promLog.Infoln("Output parsed")
-	promLog.Infof("\n\n state: %#v \n\n\n", model.NewStateFromOutput(output))
+
+	Model.Update(model.NewStateFromOutput(output))
+
+	promLog.Infof("\n Model.State:\n %#v \n", Model.State)
+	promLog.Infof("\n Model.PrevState:\n %#v \n", Model.PrevState)
+	promLog.Infof("\n Model.ChangedFields:\n %#v \n\n", Model.ChangedFields)
 
 	for _, metric := range Metrics {
 		metric.Handler.Handle(metric, output)
