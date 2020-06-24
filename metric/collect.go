@@ -48,8 +48,8 @@ func Collect() {
 
 	Model.Update(model.NewStateFromOutput(output))
 
-	promLog.Infof("\n Model.State:\n %#v \n", Model.State)
 	promLog.Infof("\n Model.PrevState:\n %#v \n", Model.PrevState)
+	promLog.Infof("\n Model.State:\n %#v \n", Model.State)
 	promLog.Infof("\n Model.ChangedFields:\n %#v \n\n", Model.ChangedFields)
 
 	for _, metric := range Metrics {

@@ -1,11 +1,5 @@
 package model
 
-import (
-	"fmt"
-
-	"github.com/google/go-cmp/cmp"
-)
-
 // Model data
 type Model struct {
 	State         *State
@@ -30,10 +24,8 @@ func (m *Model) Update(newState *State) {
 
 	updateStatusCounts(m.PrevState, m.State)
 
-	if !cmp.Equal(m.PrevState, m.State) {
-		// TODO calc ChangedFields
-		fmt.Println("NOT EQUALLLLLLLLS: ", cmp.Equal(m.PrevState, m.State))
-	}
+	_, diffFields := m.State.Compare(m.PrevState)
+	m.ChangedFields = diffFields
 }
 
 func updateStatusCounts(old *State, curr *State) {
@@ -42,7 +34,6 @@ func updateStatusCounts(old *State, curr *State) {
 	prevFlags := old.UpsStatus.GetFlags()
 	for flagName := range StatusFlags {
 		if flags[flagName] != prevFlags[flagName] {
-			fmt.Println(" flag NOT EQ: ", flagName)
 			curr.UpsStatus.FlagChangeCounts[flagName]++
 		}
 	}

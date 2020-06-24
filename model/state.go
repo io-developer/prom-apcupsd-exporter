@@ -1,6 +1,7 @@
 package model
 
 import (
+	"reflect"
 	"time"
 )
 
@@ -82,6 +83,29 @@ func NewState() *State {
 		UpsDriver:                  Driver{},
 		UpsMode:                    Mode{},
 	}
+}
+
+// Compare method
+func (s *State) Compare(b *State) (equal bool, diffFields []string) {
+	diffFields = []string{}
+	typeElem := reflect.TypeOf(s).Elem()
+	elemA := reflect.ValueOf(s).Elem()
+	elemB := reflect.ValueOf(b).Elem()
+	for i := 0; i < typeElem.NumField(); i++ {
+		equal := false
+		field := typeElem.Field(i)
+		fieldA := elemA.Field(i)
+		fieldB := elemB.Field(i)
+		if method, exists := field.Type.MethodByName("Equal"); exists {
+			equal = method.Func.Call([]reflect.Value{fieldA, fieldB})[0].Bool()
+		} else {
+			equal = reflect.DeepEqual(fieldA.Interface(), fieldB.Interface())
+		}
+		if !equal {
+			diffFields = append(diffFields, field.Name)
+		}
+	}
+	return len(diffFields) == 0, diffFields
 }
 
 // Sensivity ..
