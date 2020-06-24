@@ -86,8 +86,8 @@ func NewState() *State {
 }
 
 // Compare method
-func (s *State) Compare(b *State) (equal bool, diffFields []string) {
-	diffFields = []string{}
+func (s *State) Compare(b *State) (equal bool, diff map[string][]interface{}) {
+	diff = map[string][]interface{}{}
 	typeElem := reflect.TypeOf(s).Elem()
 	elemA := reflect.ValueOf(s).Elem()
 	elemB := reflect.ValueOf(b).Elem()
@@ -102,10 +102,10 @@ func (s *State) Compare(b *State) (equal bool, diffFields []string) {
 			equal = reflect.DeepEqual(fieldA.Interface(), fieldB.Interface())
 		}
 		if !equal {
-			diffFields = append(diffFields, field.Name)
+			diff[field.Name] = []interface{}{fieldA.Interface(), fieldB.Interface()}
 		}
 	}
-	return len(diffFields) == 0, diffFields
+	return len(diff) == 0, diff
 }
 
 // Sensivity ..
@@ -306,6 +306,15 @@ func (s Status) GetNormedFlags(flag uint64, text string, invert bool) map[string
 		}
 	}
 	return flags
+}
+
+// CloneFlagChangeCounts method
+func (s Status) CloneFlagChangeCounts() map[string]uint64 {
+	clone := make(map[string]uint64, len(s.FlagChangeCounts))
+	for k, v := range s.FlagChangeCounts {
+		clone[k] = v
+	}
+	return clone
 }
 
 // StatusFlags ..
