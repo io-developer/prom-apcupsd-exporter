@@ -2,9 +2,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"local/apcupsd_exporter/metric"
 	"net/http"
 	"time"
+
+	"github.com/gorilla/websocket"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	promLog "github.com/prometheus/common/log"
@@ -50,10 +53,13 @@ func main() {
 	go metric.Collect(metric.CollectChan)
 	go metric.CollectLoop(args.collectInterval)
 
-	promLog.Infof("Starting exporter at %s\n\n", args.listenAddr)
-
 	http.HandleFunc("/metrics", handleMetrics)
-	http.ListenAndServe(args.listenAddr, nil)
+	http.HandleFunc("/ws", handleWs)
+
+	promLog.Infof("Starting exporter at %s\n\n", args.listenAddr)
+	if err := http.ListenAndServe(args.listenAddr, nil); err != nil {
+		promLog.Fatalln("Cant start server: ", err.Error())
+	}
 }
 
 var promHandler = promhttp.Handler()
@@ -68,5 +74,37 @@ func handleMetrics(w http.ResponseWriter, r *http.Request) {
 		promLog.Infoln("ServeHTTP start")
 		promHandler.ServeHTTP(w, r)
 		promLog.Infoln("ServeHTTP end")
+	}
+}
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+func handleWs(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		promLog.Errorln("WS upgrade:", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		_, inBytes, err := conn.ReadMessage()
+		if err != nil {
+			promLog.Errorln("WS read:", err)
+			break
+		}
+		promLog.Warnf("WS read: %s", inBytes)
+
+		outMsg := fmt.Sprintf("Hello world '%s'", string(inBytes))
+
+		err = conn.WriteMessage(websocket.TextMessage, []byte(outMsg))
+		if err != nil {
+			promLog.Errorln("WS write:", err)
+			break
+		}
 	}
 }
