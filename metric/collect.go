@@ -93,6 +93,12 @@ func logModelChanges() {
 
 func updateMetrics() {
 	for _, metric := range Metrics {
-		metric.Handler.Handle(metric, CurrentOutput)
+		if metric.Handler != nil {
+			metric.Handler.Handle(metric, CurrentOutput)
+		} else if metric.HandlerFunc != nil {
+			metric.HandlerFunc(metric, CurrentModel)
+		} else if metric.ValFunc != nil {
+			metric.UpdateCollector(metric.ValFunc(metric, CurrentModel))
+		}
 	}
 }

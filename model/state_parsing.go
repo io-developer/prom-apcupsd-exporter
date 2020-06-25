@@ -59,7 +59,7 @@ func NewStateFromOutput(o *apc.Output) *State {
 		UpsTurnOnBatteryMin:           o.GetFloat("RETPCT", 0),
 		UpsTempInternal:               o.GetFloat("ITEMP", 0),
 		UpsTempAmbient:                o.GetFloat("AMBTEMP", 0),
-		UpsTempHumidity:               o.GetFloat("HUMIDITY", 0),
+		UpsHumidity:                   o.GetFloat("HUMIDITY", 0),
 		UpsAlarmMode: AlarmMode{
 			Type: o.GetMapped("ALARMDEL", AlarmModeTypes, 0).(AlarmModeType),
 			Text: o.Get("ALARMDEL", ""),

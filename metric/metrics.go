@@ -1,6 +1,12 @@
 package metric
 
 import (
+	"fmt"
+	"local/apcupsd_exporter/model"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -89,18 +95,11 @@ var Metrics = []*Metric{
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_sensitivity",
-			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations." +
-				" Low=1, Medium=2, High=3, 'Auto Adjust'=4, Unknown=5",
+			Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations. " +
+				typesToDesc(model.SensivityTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "SENSE",
-			ValueMap: map[string]float64{
-				"Low":         1,
-				"Medium":      2,
-				"High":        3,
-				"Auto Adjust": 4,
-				"Unknown":     5,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.InputSensivity.Type)
 		},
 	},
 	{
@@ -108,49 +107,63 @@ var Metrics = []*Metric{
 			Name: "apcupsd_input_frequency",
 			Help: "**LINEFREQ** Line frequency in hertz as given by the UPS.",
 		}),
-		Handler: NewDefaultHandler("LINEFREQ"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputFrequency
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage",
 			Help: "**LINEV** The current line voltage as returned by the UPS.",
 		}),
-		Handler: NewDefaultHandler("LINEV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltage
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage_min",
 			Help: "**MINLINEV** The minimum line voltage since the UPS was started, as returned by the UPS",
 		}),
-		Handler: NewDefaultHandler("MINLINEV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltageMin
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage_max",
 			Help: "**MAXLINEV** The maximum line voltage since the UPS was started, as reported by the UPS",
 		}),
-		Handler: NewDefaultHandler("MAXLINEV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltageMax
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage_nominal",
 			Help: "**NOMINV** The input voltage that the UPS is configured to expect.",
 		}),
-		Handler: NewDefaultHandler("NOMINV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltageNominal
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage_transfer_low",
 			Help: "**LOTRANS** The line voltage below which the UPS will switch to batteries.",
 		}),
-		Handler: NewDefaultHandler("LOTRANS"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltageTransferLow
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_input_voltage_transfer_high",
 			Help: "**HITRANS** The line voltage above which the UPS will switch to batteries.",
 		}),
-		Handler: NewDefaultHandler("HITRANS"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.InputVoltageTransferHigh
+		},
 	},
 
 	// Output
@@ -159,35 +172,45 @@ var Metrics = []*Metric{
 			Name: "apcupsd_output_load",
 			Help: "**LOADPCT** The percentage of load capacity as estimated by the UPS.",
 		}),
-		Handler: NewDefaultHandler("LOADPCT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.OutputLoad
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_output_amps",
 			Help: "**OUTCURNT** Amps",
 		}),
-		Handler: NewDefaultHandler("OUTCURNT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.OutputAmps
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_output_power_nominal",
 			Help: "**NOMPOWER** The maximum power in Watts that the UPS is designed to supply.",
 		}),
-		Handler: NewDefaultHandler("NOMPOWER"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.OutputPowerNominal
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_output_voltage",
 			Help: "**OUTPUTV** The voltage the UPS is supplying to your equipment",
 		}),
-		Handler: NewDefaultHandler("OUTPUTV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.OutputVoltage
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_output_voltage_nominal",
 			Help: "**NOMOUTV** The output voltage that the UPS will attempt to supply when on battery power.",
 		}),
-		Handler: NewDefaultHandler("NOMOUTV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.OutputVoltageNominal
+		},
 	},
 
 	// Battery
@@ -196,42 +219,54 @@ var Metrics = []*Metric{
 			Name: "apcupsd_battery_charge",
 			Help: "**BCHARGE** The percentage charge on the batteries.",
 		}),
-		Handler: NewDefaultHandler("BCHARGE"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.BatteryCharge
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_voltage",
 			Help: "**BATTV** Battery voltage as supplied by the UPS.",
 		}),
-		Handler: NewDefaultHandler("BATTV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.BatteryVoltage
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_voltage_nominal",
 			Help: "**NOMBATTV** The nominal battery voltage.",
 		}),
-		Handler: NewDefaultHandler("NOMBATTV"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.BatteryVoltageNominal
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_external",
 			Help: "**EXTBATTS** The number of external batteries as defined by the user. A correct number here helps the UPS compute the remaining runtime more accurately.",
 		}),
-		Handler: NewDefaultHandler("EXTBATTS"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.BatteryExternalCount)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_bad",
 			Help: "**BADBATTS** The number of bad battery packs.",
 		}),
-		Handler: NewDefaultHandler("BADBATTS"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.BatteryBadCount)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_battery_replaced_timestamp",
 			Help: "**BATTDATE** The date that batteries were last replaced.",
 		}),
-		Handler: NewDefaultHandler("BATTDATE"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.BatteryReplacedDate.Unix())
+		},
 	},
 
 	// Ups
@@ -240,105 +275,112 @@ var Metrics = []*Metric{
 			Name: "apcupsd_ups_manafactured_timestamp",
 			Help: "**MANDATE** The date the UPS was manufactured.",
 		}),
-		Handler: NewDefaultHandler("MANDATE"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsManafacturedDate.Unix())
+		},
 	},
 	{
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_status",
-			Help: "Current status vec labeled by flag. Value 0 or 1",
+			Help: "Current status vec labeled by flag. Value 0 or single flag. Flags: " +
+				typedFlagsToDescFmt(model.StatusFlags, "0x%08x='%s'"),
 		}, []string{"flag"}),
 		Handler: StatusHandler{},
 	},
 	{
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_hex",
-			Help: "Current status vec labeled by flag. Value 0 or hex of single flag",
+			Name: "apcupsd_ups_status_norm",
+			Help: "Current status vec labeled by flag. Value 0 or 1. See flag names in status description",
+		}, []string{"flag"}),
+		Handler: StatusHexHandler{},
+	},
+	{
+		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "apcupsd_ups_status_norm_inv",
+			Help: "Current status vec labeled by flag. Value 0 or 1. See flag names in status description",
 		}, []string{"flag"}),
 		Handler: StatusHexHandler{},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_status_flag",
-			Help: "**STATFLAG** Current status flag (summary hex number)",
+			Help: "**STATFLAG** Current status flag (summary flags value). See flags in status description",
 		}),
-		Handler: NewDefaultHandler("STATFLAG"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsStatus.Flag)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_dip_switch_flag",
 			Help: "**DIPSW** The current dip switch settings on UPSes that have them.",
 		}),
-		Handler: NewDefaultHandler("DIPSW"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsDipSwitchFlag)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_reg1",
 			Help: "**REG1** The value from the UPS fault register 1.",
 		}),
-		Handler: NewDefaultHandler("REG1"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsReg1)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_reg2",
 			Help: "**REG2** The value from the UPS fault register 2.",
 		}),
-		Handler: NewDefaultHandler("REG2"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsReg2)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_reg3",
 			Help: "**REG3** The value from the UPS fault register 3.",
 		}),
-		Handler: NewDefaultHandler("REG3"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsReg3)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_timeleft",
 			Help: "**TIMELEFT** (seconds) The remaining runtime left on batteries as estimated by the UPS.",
 		}),
-		Handler: NewDefaultHandler("TIMELEFT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTimeleftSeconds)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_timeleft_low_battery",
 			Help: "**DLOWBATT** (seconds) The remaining runtime below which the UPS sends the low battery signal. At this point apcupsd will force an immediate emergency shutdown.",
 		}),
-		Handler: NewDefaultHandler("DLOWBATT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTimeleftSecondsLowBattery)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_transfer_onbattery",
 			Help: "**NUMXFERS** The number of transfers to batteries since apcupsd startup.",
 		}),
-		Handler: NewDefaultHandler("NUMXFERS"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTransferOnBatteryCount)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_transfer_onbattery_reason",
 			Help: "**LASTXFER** The reason for the last transfer to batteries." +
-				" 'No transfers since turnon'=1," +
-				" 'Automatic or explicit self test'=2," +
-				" 'Forced by software'=3," +
-				" 'Low line voltage'=4," +
-				" 'High line voltage'=5," +
-				" 'Unacceptable line voltage changes'=6," +
-				" 'Line voltage notch or spike'=7," +
-				" 'Input frequency out of range'=8," +
-				" 'UNKNOWN EVENT'=9",
+				typesToDesc(model.TransferOnbatteryReasonTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "LASTXFER",
-			ValueMap: map[string]float64{
-				"No transfers since turnon":         1,
-				"Automatic or explicit self test":   2,
-				"Forced by software":                3,
-				"Low line voltage":                  4,
-				"High line voltage":                 5,
-				"Unacceptable line voltage changes": 6,
-				"Line voltage notch or spike":       7,
-				"Input frequency out of range":      8,
-				"UNKNOWN EVENT":                     9,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTransferOnBatteryReason.Type)
 		},
 	},
 	{
@@ -346,113 +388,109 @@ var Metrics = []*Metric{
 			Name: "apcupsd_ups_transfer_onbattery_time",
 			Help: "**TONBATT** Time in seconds currently on batteries",
 		}),
-		Handler: NewDefaultHandler("TONBATT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsOnBatterySeconds)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_transfer_onbattery_time_cumulative",
 			Help: "Total (cumulative) time on batteries in seconds since apcupsd startup.",
 		}),
-		Handler: NewDefaultHandler("CUMONBATT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsOnBatterySecondsCumulative)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_transfer_onbattery_timestamp",
 			Help: "**XONBATT** Time and date of last transfer to batteries",
 		}),
-		Handler: NewDefaultHandler("XONBATT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTransferOnBatteryDate.Unix())
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_transfer_offbattery_timestamp",
 			Help: "Time and date of last transfer from batteries",
 		}),
-		Handler: NewDefaultHandler("XOFFBATT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTransferOffBatteryDate.Unix())
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_turnon_delay",
 			Help: "**DWAKE** (seconds) The amount of time the UPS will wait before restoring power to your equipment after a power off condition when the power is restored.",
 		}),
-		Handler: NewDefaultHandler("DWAKE"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTurnOnDelaySeconds)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_turnon_battery_min",
 			Help: "	**RETPCT** The percentage charge that the batteries must have after a power off condition before the UPS will restore power to your equipment.",
 		}),
-		Handler: NewDefaultHandler("RETPCT"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.UpsTurnOnBatteryMin
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_turnoff_delay",
 			Help: "**DSHUTD** (seconds) The grace delay that the UPS gives after receiving a power down command from apcupsd before it powers off your equipment.",
 		}),
-		Handler: NewDefaultHandler("DSHUTD"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsTurnOffDelaySeconds)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_temp_internal",
 			Help: "**ITEMP** (Celsius) Internal UPS temperature as supplied by the UPS.",
 		}),
-		Handler: NewDefaultHandler("ITEMP"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.UpsTempInternal
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_temp_ambient",
 			Help: "**AMBTEMP** The ambient temperature as measured by the UPS.",
 		}),
-		Handler: NewDefaultHandler("AMBTEMP"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.UpsTempAmbient
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_humidity",
 			Help: "**HUMIDITY** The humidity as measured by the UPS.",
 		}),
-		Handler: NewDefaultHandler("HUMIDITY"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.UpsHumidity
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_alarm_mode",
-			Help: "**ALARMDEL** The delay period for the UPS alarm.\n" +
-				"'No alarm'=1, 'Always'=2, '5 Seconds'=3, '30 Seconds'=4, 'Low Battery'=5",
+			Help: "**ALARMDEL** The delay period for the UPS alarm." +
+				typesToDesc(model.AlarmModeTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "ALARMDEL",
-			ValueMap: map[string]float64{
-				"No alarm":    1,
-				"Always":      2,
-				"5 Seconds":   3,
-				"5":           3,
-				"30 Seconds":  4,
-				"30":          4,
-				"Low Battery": 5,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsAlarmMode.Type)
 		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_selftest_result",
 			Help: "**SELFTEST** The results of the last self test, and may have the following values." +
-				" NO=1 No results i.e. no self test performed in the last 5 minutes," +
-				" OK=2 self test indicates good battery," +
-				" BT=3 self test failed due to insufficient battery capacity," +
-				" NG=4 self test failed due to overload," +
-				" IP=5 INPROGRESS," +
-				" WN=6 WARNING," +
-				" ??=7 UNKNOWN",
+				typesToDesc(model.SelftestResultTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "SELFTEST",
-			ValueMap: map[string]float64{
-				"NO": 1,
-				"OK": 2,
-				"BT": 3,
-				"NG": 4,
-				"IP": 5,
-				"WN": 6,
-				"??": 7,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsSelftestResult.Type)
 		},
 	},
 	{
@@ -460,99 +498,37 @@ var Metrics = []*Metric{
 			Name: "apcupsd_ups_selftest_interval",
 			Help: "**STESTI** The interval in seconds between automatic self tests.",
 		}),
-		Handler: NewDefaultHandler("STESTI"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsSelftestIntervalSeconds)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_cable",
 			Help: "**CABLE** The cable as specified in the configuration file ('UPSCABLE')." +
-				" 'Custom Cable Simple'=1," +
-				" 'APC Cable 940-0119A'=2," +
-				" 'APC Cable 940-0127A'=3," +
-				" 'APC Cable 940-0128A'=4," +
-				" 'APC Cable 940-0020B'=5," +
-				" 'APC Cable 940-0020C'=6," +
-				" 'APC Cable 940-0023A'=7," +
-				" 'MAM Cable 04-02-2000'=8," +
-				" 'APC Cable 940-0095A'=9," +
-				" 'APC Cable 940-0095B'=10," +
-				" 'APC Cable 940-0095C'=11," +
-				" 'Custom Cable Smart'=12," +
-				" 'APC Cable 940-0024B'=121," +
-				" 'APC Cable 940-0024C'=122," +
-				" 'APC Cable 940-1524C'=123," +
-				" 'APC Cable 940-0024G'=124," +
-				" 'APC Cable 940-0625A'=125," +
-				" 'Ethernet Link'=13," +
-				" 'USB Cable'=14",
+				typesToDescFmt(model.CableTypes, "% 3d='%s'"),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "CABLE",
-			ValueMap: map[string]float64{
-				"Custom Cable Simple":  1,
-				"APC Cable 940-0119A":  2,
-				"APC Cable 940-0127A":  3,
-				"APC Cable 940-0128A":  4,
-				"APC Cable 940-0020B":  5,
-				"APC Cable 940-0020C":  6,
-				"APC Cable 940-0023A":  7,
-				"MAM Cable 04-02-2000": 8,
-				"APC Cable 940-0095A":  9,
-				"APC Cable 940-0095B":  10,
-				"APC Cable 940-0095C":  11,
-				"Custom Cable Smart":   12,
-				"APC Cable 940-0024B":  121,
-				"APC Cable 940-0024C":  122,
-				"APC Cable 940-1524C":  123,
-				"APC Cable 940-0024G":  124,
-				"APC Cable 940-0625A":  125,
-				"Ethernet Link":        13,
-				"USB Cable":            14,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsCable.Type)
 		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_driver",
 			Help: "**DRIVER** type." +
-				" 'DUMB UPS Driver'=1," +
-				" 'APC Smart UPS (any)'=2," +
-				" 'USB UPS Driver'=3," +
-				" 'NETWORK UPS Driver'=4," +
-				" 'TEST UPS Driver'=5," +
-				" 'PCNET UPS Driver'=6," +
-				" 'SNMP UPS Driver'=7," +
-				" 'MODBUS UPS Driver'=8",
+				typesToDesc(model.DriverTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "DRIVER",
-			ValueMap: map[string]float64{
-				"DUMB UPS Driver":     1,
-				"APC Smart UPS (any)": 2,
-				"USB UPS Driver":      3,
-				"NETWORK UPS Driver":  4,
-				"TEST UPS Driver":     5,
-				"PCNET UPS Driver":    6,
-				"SNMP UPS Driver":     7,
-				"MODBUS UPS Driver":   8,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsDriver.Type)
 		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_mode",
-			Help: "**UPSMODE** The mode in which apcupsd is operating as specified in the configuration file ('UPSMODE')." +
-				" 'Stand Alone'=1," +
-				" 'ShareUPS Slave'=2," +
-				" 'ShareUPS Master'=3",
+			Help: "**UPSMODE** The mode in which apcupsd is operating as specified in the configuration file ('UPSMODE'). " + typesToDesc(model.ModeTypes),
 		}),
-		Handler: DefaultHandler{
-			ApcKey: "UPSMODE",
-			ValueMap: map[string]float64{
-				"Stand Alone":     1,
-				"ShareUPS Slave":  2,
-				"ShareUPS Master": 3,
-			},
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.UpsMode.Type)
 		},
 	},
 
@@ -562,21 +538,27 @@ var Metrics = []*Metric{
 			Name: "apcupsd_shutdown_battery_min",
 			Help: "**MBATTCHG** If the battery charge percentage (BCHARGE) drops below this value, apcupsd will  shutdown your system.",
 		}),
-		Handler: NewDefaultHandler("MBATTCHG"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return model.State.ShutdownBatteryMin
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_shutdown_timeleft_min",
 			Help: "**MINTIMEL** (seconds) apcupsd will shutdown your system if the remaining runtime equals or is below this point.",
 		}),
-		Handler: NewDefaultHandler("MINTIMEL"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.ShutdownTimeleftSecondsMin)
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "apcupsd_shutdown_onbattery_time_max",
 			Help: "**MAXTIME** (seconds) apcupsd will shutdown your system if the time on batteries exceeds this value. A value of zero disables the feature.",
 		}),
-		Handler: NewDefaultHandler("MAXTIME"),
+		ValFunc: func(m *Metric, model *model.Model) float64 {
+			return float64(model.State.ShutdownOnBatterySecondsMax)
+		},
 	},
 }
 
@@ -587,4 +569,31 @@ func RegisterPermanents() {
 			m.Register()
 		}
 	}
+}
+
+func typesToDesc(types map[string]interface{}) string {
+	return typesToDescFmt(types, "%d='%s'")
+}
+
+func typesToDescFmt(types map[string]interface{}, f string) string {
+	descs := []string{}
+	used := map[uint64]bool{}
+	for name, v := range types {
+		val, _ := strconv.ParseUint(fmt.Sprintf("%v", v), 10, 64)
+		if _, exists := used[val]; !exists {
+			used[val] = true
+			descs = append(descs, fmt.Sprintf(f, val, name))
+		}
+	}
+	sort.Strings(descs)
+	return strings.Join(descs, ", ")
+}
+
+func typedFlagsToDescFmt(typedFlags map[string]uint64, f string) string {
+	descs := []string{}
+	for name, flag := range typedFlags {
+		descs = append(descs, fmt.Sprintf(f, flag, name))
+	}
+	sort.Strings(descs)
+	return strings.Join(descs, ", ")
 }

@@ -53,7 +53,7 @@ type State struct {
 	UpsTurnOnBatteryMin           float64
 	UpsTempInternal               float64
 	UpsTempAmbient                float64
-	UpsTempHumidity               float64
+	UpsHumidity                   float64
 	UpsAlarmMode                  AlarmMode
 	UpsSelftestResult             SelftestResult
 	UpsSelftestIntervalSeconds    int64
