@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
 
 /*
@@ -280,26 +281,50 @@ var Metrics = []*Metric{
 		},
 	},
 	{
+		IsPermanent: true,
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "apcupsd_ups_status",
 			Help: "Current status vec labeled by flag. Value 0 or single flag. Flags: " +
 				typedFlagsToDescFmt(model.StatusFlags, "0x%08x='%s'"),
 		}, []string{"flag"}),
-		Handler: StatusHandler{},
+		HandlerFunc: func(m *Metric, model *model.Model) {
+			gaugeVec := m.Collector.(*prometheus.GaugeVec)
+			for name, val := range model.State.UpsStatus.GetFlags() {
+				gaugeVec.WithLabelValues(name).Set(float64(val))
+			}
+		},
 	},
 	{
+		IsPermanent: true,
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_norm",
+			Name: "apcupsd_ups_status_normed",
 			Help: "Current status vec labeled by flag. Value 0 or 1. See flag names in status description",
 		}, []string{"flag"}),
-		Handler: StatusHexHandler{},
+		HandlerFunc: func(m *Metric, model *model.Model) {
+			gaugeVec := m.Collector.(*prometheus.GaugeVec)
+			for name, val := range model.State.UpsStatus.GetNormedFlags(false) {
+				gaugeVec.WithLabelValues(name).Set(float64(val))
+			}
+		},
 	},
 	{
-		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_norm_inv",
-			Help: "Current status vec labeled by flag. Value 0 or 1. See flag names in status description",
+		IsPermanent: true,
+		Collector: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "apcupsd_ups_status_change_count",
+			Help: "Number of status changes per flag ('flag' label).",
 		}, []string{"flag"}),
-		Handler: StatusHexHandler{},
+		HandlerFunc: func(m *Metric, model *model.Model) {
+			counterVec := m.Collector.(*prometheus.CounterVec)
+			for name, val := range model.State.UpsStatus.FlagChangeCounts {
+				counter := counterVec.WithLabelValues(name)
+				curData := &dto.Metric{}
+				counter.Write(curData)
+				delta := int64(val) - int64(*curData.Counter.Value)
+				if delta > 0 {
+					counter.Add(float64(delta))
+				}
+			}
+		},
 	},
 	{
 		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
@@ -365,7 +390,7 @@ var Metrics = []*Metric{
 		},
 	},
 	{
-		Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+		Collector: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "apcupsd_ups_transfer_onbattery",
 			Help: "**NUMXFERS** The number of transfers to batteries since apcupsd startup.",
 		}),

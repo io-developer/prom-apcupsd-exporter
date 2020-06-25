@@ -292,14 +292,14 @@ func (s Status) GetFlags() map[string]uint64 {
 }
 
 // GetNormedFlags method
-func (s Status) GetNormedFlags(flag uint64, text string, invert bool) map[string]uint8 {
+func (s Status) GetNormedFlags(invert bool) map[string]uint8 {
 	match, notMatch := uint8(1), uint8(0)
 	if invert {
 		match, notMatch = 0, 1
 	}
 	flags := make(map[string]uint8, len(StatusFlags))
 	for flagName, flagVal := range StatusFlags {
-		if flag&flagVal > 0 {
+		if s.Flag&flagVal > 0 {
 			flags[flagName] = match
 		} else {
 			flags[flagName] = notMatch

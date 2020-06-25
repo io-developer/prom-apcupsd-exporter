@@ -5,12 +5,12 @@ import (
 	"math"
 
 	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
 
 // Metric struct
 type Metric struct {
 	Collector    prometheus.Collector
-	Handler      Handler
 	HandlerFunc  func(m *Metric, model *model.Model)
 	ValFunc      func(m *Metric, model *model.Model) float64
 	DefaultValue float64
@@ -36,12 +36,20 @@ func (m *Metric) Unregister() {
 
 // UpdateCollector method
 func (m *Metric) UpdateCollector(val float64) {
-	if math.IsNaN(val) {
+	if !m.IsPermanent && math.IsNaN(val) {
 		m.Unregister()
 	} else {
 		m.Register()
 	}
+
 	if gauge, ok := m.Collector.(prometheus.Gauge); ok {
 		gauge.Set(val)
+	} else if counter, ok := m.Collector.(prometheus.Counter); ok {
+		curData := &dto.Metric{}
+		counter.Write(curData)
+		delta := val - *curData.Counter.Value
+		if int64(delta) > 0 {
+			counter.Add(delta)
+		}
 	}
 }
