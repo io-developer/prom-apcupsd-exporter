@@ -32,6 +32,11 @@ func (o *Output) Parse() {
 	}
 }
 
+// IsEmpty method
+func (o *Output) IsEmpty() bool {
+	return len(o.Parsed) == 0
+}
+
 // GetParsed method
 func (o *Output) GetParsed(key string, def string) string {
 	return o.Get(key, def)
@@ -115,7 +120,7 @@ func (o *Output) GetFlags(key string, baseFlags map[string]uint64) map[string]ui
 }
 
 // GetMapped ..
-func (o *Output) GetMapped(key string, kvMap map[string]interface{}, def uint64) interface{} {
+func (o *Output) GetMapped(key string, kvMap map[string]interface{}, def interface{}) interface{} {
 	if raw, exists := o.Parsed[key]; exists {
 		if mapped, mappedExists := kvMap[raw]; mappedExists {
 			return mapped

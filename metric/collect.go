@@ -11,22 +11,22 @@ import (
 
 // Vars ..
 var (
-	Channel             chan Opts
-	ApcupsdAddr         string
-	ApcaccessPath       string
-	ApcaccessFloodLimit time.Duration
+	ApcupsdAddr         = "127.0.0.1:3551"
+	ApcaccessPath       = "/sbin/apcaccess"
+	ApcaccessFloodLimit = time.Duration(0)
 	CurrentOutput       *apc.Output
-	CurrentModel        *model.Model
+	CurrentModel        = model.NewModel()
+	CollectChan         = make(chan CollectOpts)
 )
 
-// Opts ..
-type Opts struct {
+// CollectOpts ..
+type CollectOpts struct {
 	PreventFlood bool
 	OnComplete   chan bool
 }
 
 // Collect ..
-func Collect(c chan Opts) {
+func Collect(c chan CollectOpts) {
 	for true {
 		opts, ok := <-c
 		if !ok {
@@ -34,17 +34,10 @@ func Collect(c chan Opts) {
 		}
 
 		if !opts.PreventFlood || checkFloodInterval() {
-			promLog.Infoln("parseApcOutput..")
 			parseOutput()
-
-			promLog.Infoln("updateModel..")
 			updateModel()
 			logModelChanges()
-
-			promLog.Infoln("updateMetrics..")
 			updateMetrics()
-
-			promLog.Infoln("Collect done")
 		}
 
 		if opts.OnComplete != nil {
@@ -56,7 +49,7 @@ func Collect(c chan Opts) {
 // CollectLoop ..
 func CollectLoop(interval time.Duration) {
 	for {
-		Channel <- Opts{PreventFlood: true}
+		CollectChan <- CollectOpts{PreventFlood: true}
 		time.Sleep(interval)
 	}
 }
@@ -73,25 +66,32 @@ func checkFloodInterval() bool {
 }
 
 func parseOutput() {
+	promLog.Infoln("parsing apcupsd output..")
+
 	cmdResult, err := exec.Command(ApcaccessPath, "status", ApcupsdAddr).Output()
 	if err != nil {
-		promLog.Fatal(err)
+		promLog.Errorln("apcaccess exited with error")
+		promLog.Errorln("  Error:", err.Error())
+		promLog.Errorln("  Result:", string(cmdResult))
+		cmdResult = []byte{}
 	}
 	CurrentOutput = apc.NewOutput(string(cmdResult))
 	CurrentOutput.Parse()
 }
 
 func updateModel() {
+	promLog.Infoln("updating model..")
 	CurrentModel.Update(model.NewStateFromOutput(CurrentOutput))
 }
 
 func logModelChanges() {
 	for field, diff := range CurrentModel.ChangedFields {
-		promLog.Infof("Changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
+		promLog.Infof("field changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
 	}
 }
 
 func updateMetrics() {
+	promLog.Infoln("updating metrics..")
 	for _, metric := range Metrics {
 		if metric.HandlerFunc != nil {
 			metric.HandlerFunc(metric, CurrentModel)
@@ -99,4 +99,5 @@ func updateMetrics() {
 			metric.UpdateCollector(metric.ValFunc(metric, CurrentModel))
 		}
 	}
+	promLog.Infoln("metrics updated")
 }

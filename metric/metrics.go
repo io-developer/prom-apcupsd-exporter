@@ -297,7 +297,7 @@ var Metrics = []*Metric{
 	{
 		IsPermanent: true,
 		Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "apcupsd_ups_status_normed",
+			Name: "apcupsd_ups_status01",
 			Help: "Current status vec labeled by flag. Value 0 or 1. See flag names in status description",
 		}, []string{"flag"}),
 		HandlerFunc: func(m *Metric, model *model.Model) {
@@ -310,7 +310,7 @@ var Metrics = []*Metric{
 	{
 		IsPermanent: true,
 		Collector: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "apcupsd_ups_status_change_count",
+			Name: "apcupsd_ups_status_changes",
 			Help: "Number of status changes per flag ('flag' label).",
 		}, []string{"flag"}),
 		HandlerFunc: func(m *Metric, model *model.Model) {
