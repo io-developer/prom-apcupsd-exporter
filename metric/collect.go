@@ -34,9 +34,17 @@ func Collect(c chan Opts) {
 		}
 
 		if !opts.PreventFlood || checkFloodInterval() {
+			promLog.Infoln("parseApcOutput..")
 			parseOutput()
+
+			promLog.Infoln("updateModel..")
 			updateModel()
+			logModelChanges()
+
+			promLog.Infoln("updateMetrics..")
 			updateMetrics()
+
+			promLog.Infoln("Collect done")
 		}
 
 		if opts.OnComplete != nil {
@@ -65,30 +73,25 @@ func checkFloodInterval() bool {
 }
 
 func parseOutput() {
-	promLog.Infoln("parseApcOutput..")
-
 	cmdResult, err := exec.Command(ApcaccessPath, "status", ApcupsdAddr).Output()
 	if err != nil {
 		promLog.Fatal(err)
 	}
-
 	CurrentOutput = apc.NewOutput(string(cmdResult))
 	CurrentOutput.Parse()
 }
 
 func updateModel() {
-	promLog.Infoln("updateModel..")
-
 	CurrentModel.Update(model.NewStateFromOutput(CurrentOutput))
+}
 
+func logModelChanges() {
 	for field, diff := range CurrentModel.ChangedFields {
 		promLog.Infof("Changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
 	}
 }
 
 func updateMetrics() {
-	promLog.Infoln("updateMetrics..")
-
 	for _, metric := range Metrics {
 		metric.Handler.Handle(metric, CurrentOutput)
 	}
