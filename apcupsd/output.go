@@ -1,4 +1,4 @@
-package apc
+package apcupsd
 
 import (
 	"errors"

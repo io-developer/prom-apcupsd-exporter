@@ -1,7 +1,7 @@
 package metric
 
 import (
-	"local/apcupsd_exporter/apc"
+	"local/apcupsd_exporter/apcupsd"
 	"local/apcupsd_exporter/model"
 	"os/exec"
 	"time"
@@ -14,7 +14,7 @@ var (
 	ApcupsdAddr         = "127.0.0.1:3551"
 	ApcaccessPath       = "/sbin/apcaccess"
 	ApcaccessFloodLimit = time.Duration(0)
-	CurrentOutput       *apc.Output
+	CurrentOutput       *apcupsd.Output
 	CurrentModel        = model.NewModel()
 	CollectChan         = make(chan CollectOpts)
 )
@@ -75,7 +75,7 @@ func parseOutput() {
 		promLog.Errorln("  Result:", string(cmdResult))
 		cmdResult = []byte{}
 	}
-	CurrentOutput = apc.NewOutput(string(cmdResult))
+	CurrentOutput = apcupsd.NewOutput(string(cmdResult))
 	CurrentOutput.Parse()
 }
 

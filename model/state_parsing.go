@@ -1,12 +1,12 @@
 package model
 
 import (
-	"local/apcupsd_exporter/apc"
+	"local/apcupsd_exporter/apcupsd"
 	"time"
 )
 
 // NewStateFromOutput ..
-func NewStateFromOutput(o *apc.Output) *State {
+func NewStateFromOutput(o *apcupsd.Output) *State {
 	return &State{
 		// input
 		InputSensivity: Sensivity{
