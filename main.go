@@ -21,7 +21,7 @@ func main() {
 	apcaccessPath := flag.String("apcaccess", "/sbin/apcaccess",
 		"apcaccess path",
 	)
-	collectMinInterval := flag.Float64("collectMinInterval", 0.5,
+	apcaccessFloodLimit := flag.Float64("apcaccessFloodLimit", 0.5,
 		"Min time delta between Collect calls in seconds. Prevents /metrics flooding",
 	)
 	collectLoopInterval := flag.Float64("collectLoopInterval", 10,
@@ -31,21 +31,32 @@ func main() {
 
 	promLog.Infoln("Apcupsd server addr:", *upsAddr)
 	promLog.Infoln("Apcaccess bin path:", *apcaccessPath)
-	promLog.Infoln("Min interval between collect calls:", *collectMinInterval, "sec")
+	promLog.Infoln("Min interval between apcaccess calls:", *apcaccessFloodLimit, "sec")
 	promLog.Infoln("Loop interval between collect calls:", *collectLoopInterval, "sec")
 
-	metric.Model = model.NewModel()
-	metric.ApcaccessPath = *apcaccessPath
+	metric.Channel = make(chan metric.Opts)
+	metric.CurrentModel = model.NewModel()
 	metric.ApcupsdAddr = *upsAddr
-	metric.CollectMinInterval = time.Duration(*collectMinInterval * float64(time.Second))
+	metric.ApcaccessPath = *apcaccessPath
+	metric.ApcaccessFloodLimit = time.Duration(*apcaccessFloodLimit * float64(time.Second))
 
 	promHandler := promhttp.Handler()
 	http.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-		metric.Collect()
-		promHandler.ServeHTTP(w, r)
+		onComplete := make(chan bool)
+		metric.Channel <- metric.Opts{
+			PreventFlood: true,
+			OnComplete:   onComplete,
+		}
+		if <-onComplete {
+			promLog.Infoln("ServeHTTP start")
+			promHandler.ServeHTTP(w, r)
+			promLog.Infoln("ServeHTTP end")
+		}
 	})
 
 	metric.RegisterPermanents()
+
+	go metric.Collect(metric.Channel)
 	go metric.CollectLoop(time.Duration(*collectLoopInterval * float64(time.Second)))
 
 	promLog.Infoln("Starting exporter at", *listenAddr)

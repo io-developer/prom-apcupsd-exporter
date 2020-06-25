@@ -11,58 +11,85 @@ import (
 
 // Vars ..
 var (
-	Model              *model.Model
-	ApcaccessPath      string
-	ApcupsdAddr        string
-	CollectMinInterval time.Duration
+	Channel             chan Opts
+	ApcupsdAddr         string
+	ApcaccessPath       string
+	ApcaccessFloodLimit time.Duration
+	CurrentOutput       *apc.Output
+	CurrentModel        *model.Model
 )
+
+// Opts ..
+type Opts struct {
+	PreventFlood bool
+	OnComplete   chan bool
+}
+
+// Collect ..
+func Collect(c chan Opts) {
+	for true {
+		opts, ok := <-c
+		if !ok {
+			return
+		}
+
+		if !opts.PreventFlood || checkFloodInterval() {
+			parseOutput()
+			updateModel()
+			updateMetrics()
+		}
+
+		if opts.OnComplete != nil {
+			opts.OnComplete <- true
+		}
+	}
+}
+
+// CollectLoop ..
+func CollectLoop(interval time.Duration) {
+	for {
+		Channel <- Opts{PreventFlood: true}
+		time.Sleep(interval)
+	}
+}
 
 var lastCollectNanoTs = int64(0)
 
-func checkInterval() bool {
+func checkFloodInterval() bool {
 	nowNanoTs := time.Now().UnixNano()
-	res := nowNanoTs-lastCollectNanoTs >= int64(CollectMinInterval)
+	res := nowNanoTs-lastCollectNanoTs >= int64(ApcaccessFloodLimit)
 	if res {
 		lastCollectNanoTs = nowNanoTs
 	}
 	return res
 }
 
-// Collect ..
-func Collect() {
-	if !checkInterval() {
-		return
-	}
-
-	promLog.Infoln("Collect..")
+func parseOutput() {
+	promLog.Infoln("parseApcOutput..")
 
 	cmdResult, err := exec.Command(ApcaccessPath, "status", ApcupsdAddr).Output()
 	if err != nil {
 		promLog.Fatal(err)
 	}
 
-	output := apc.NewOutput(string(cmdResult))
-	output.Parse()
-
-	promLog.Infoln("Output parsed")
-
-	Model.Update(model.NewStateFromOutput(output))
-
-	for field, diff := range Model.ChangedFields {
-		promLog.Infof("Changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
-	}
-
-	for _, metric := range Metrics {
-		metric.Handler.Handle(metric, output)
-	}
-
-	promLog.Infoln("Metrics handled")
+	CurrentOutput = apc.NewOutput(string(cmdResult))
+	CurrentOutput.Parse()
 }
 
-// CollectLoop ..
-func CollectLoop(interval time.Duration) {
-	for {
-		Collect()
-		time.Sleep(interval)
+func updateModel() {
+	promLog.Infoln("updateModel..")
+
+	CurrentModel.Update(model.NewStateFromOutput(CurrentOutput))
+
+	for field, diff := range CurrentModel.ChangedFields {
+		promLog.Infof("Changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
+	}
+}
+
+func updateMetrics() {
+	promLog.Infoln("updateMetrics..")
+
+	for _, metric := range Metrics {
+		metric.Handler.Handle(metric, CurrentOutput)
 	}
 }
