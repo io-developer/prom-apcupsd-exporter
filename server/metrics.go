@@ -10,6 +10,7 @@ import (
 
 var promHandler = promhttp.Handler()
 
+// HandleMetrics ..
 func HandleMetrics(w http.ResponseWriter, r *http.Request) {
 	onComplete := make(chan bool)
 	metric.CollectChan <- metric.CollectOpts{
