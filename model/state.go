@@ -35,6 +35,10 @@ type State struct {
 
 	// ups
 	UpsManafacturedDate           time.Time
+	UpsModel                      string
+	UpsSerial                     string
+	UpsFirmware                   string
+	UpsName                       string
 	UpsStatus                     Status
 	UpsDipSwitchFlag              uint64
 	UpsReg1                       uint64
@@ -65,6 +69,10 @@ type State struct {
 	ShutdownBatteryMin          float64
 	ShutdownTimeleftSecondsMin  int64
 	ShutdownOnBatterySecondsMax int64
+
+	// apcupsd
+	ApcupsdHost    string
+	ApcupsdVersion string
 }
 
 // NewState cotructor

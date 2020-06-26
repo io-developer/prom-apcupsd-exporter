@@ -40,6 +40,10 @@ func NewStateFromOutput(o *apcupsd.Output) *State {
 
 		// ups
 		UpsManafacturedDate: o.GetTime("MANDATE", time.Time{}),
+		UpsModel:            o.Get("MODEL", ""),
+		UpsSerial:           o.Get("SERIALNO", ""),
+		UpsFirmware:         o.Get("FIRMWARE", ""),
+		UpsName:             o.Get("UPSNAME", ""),
 
 		UpsStatus: NewStatus(
 			o.GetUint("STATFLAG", 0),
@@ -109,5 +113,9 @@ func NewStateFromOutput(o *apcupsd.Output) *State {
 		ShutdownBatteryMin:          o.GetFloat("MBATTCHG", 0),
 		ShutdownTimeleftSecondsMin:  o.GetSeconds("MINTIMEL", 0),
 		ShutdownOnBatterySecondsMax: o.GetSeconds("MAXTIME", 0),
+
+		// apcupsd
+		ApcupsdHost:    o.Get("HOSTNAME", ""),
+		ApcupsdVersion: o.Get("VERSION", ""),
 	}
 }
