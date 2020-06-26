@@ -42,15 +42,15 @@ func parseArgs() cliArgs {
 func main() {
 	args := parseArgs()
 
-	collector := &metric.Collector{
+	collector := metric.NewCollector(metric.CollectorOtps{
 		ApcupsdAddr:         args.apcupsdAddr,
 		ApcaccessPath:       args.apcaccessPath,
 		ApcaccessFloodLimit: args.apcaccessFloodLimit,
 		CollectInterval:     args.collectInterval,
-	}
-	collector.Init()
+	})
 
 	metric.RegisterPermanents()
+	collector.Start()
 
 	server.RegisterMetricEndpoints(collector)
 	server.RegisterWsEndpoints(collector)

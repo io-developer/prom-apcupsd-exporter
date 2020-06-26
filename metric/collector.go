@@ -9,31 +9,43 @@ import (
 	promLog "github.com/prometheus/common/log"
 )
 
-// Collector ..
-type Collector struct {
+// CollectorOtps ..
+type CollectorOtps struct {
 	ApcupsdAddr         string
 	ApcaccessPath       string
 	ApcaccessFloodLimit time.Duration
 	CollectInterval     time.Duration
+}
 
-	initialized  bool
+// Collector ..
+type Collector struct {
+	Opts CollectorOtps
+
+	started      bool
 	collectCh    chan CollectOpts
 	currModel    *model.Model
 	lastOutput   *apcupsd.Output
 	lastOutputTs int64
 }
 
-// Init method
-func (c *Collector) Init() {
-	if !c.initialized {
-		c.initialized = true
-		c.collectCh = make(chan CollectOpts)
-		c.currModel = model.NewModel()
-		c.lastOutput = apcupsd.NewOutput("")
-		c.lastOutput.Parse()
+// NewCollector ..
+func NewCollector(opts CollectorOtps) *Collector {
+	return &Collector{
+		Opts: opts,
 
-		go c.loopCollect()
+		collectCh:  make(chan CollectOpts),
+		currModel:  model.NewModel(),
+		lastOutput: apcupsd.NewOutput(""),
+	}
+}
+
+// Start method
+func (c *Collector) Start() {
+	if !c.started {
+		c.started = true
+
 		go c.listenCollect()
+		go c.loopCollect()
 	}
 }
 
@@ -61,7 +73,7 @@ func (c *Collector) loopCollect() {
 		c.Collect(CollectOpts{
 			PreventFlood: true,
 		})
-		time.Sleep(c.CollectInterval)
+		time.Sleep(c.Opts.ApcaccessFloodLimit)
 	}
 }
 
@@ -94,12 +106,12 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 	promLog.Infoln("updating apcupsd output..")
 
 	ts := time.Now().UnixNano()
-	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.ApcaccessFloodLimit) {
+	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.Opts.ApcaccessFloodLimit) {
 		return
 	}
 	c.lastOutputTs = ts
 
-	cmdResult, err := exec.Command(c.ApcaccessPath, "status", c.ApcupsdAddr).Output()
+	cmdResult, err := exec.Command(c.Opts.ApcaccessPath, "status", c.Opts.ApcupsdAddr).Output()
 	if err != nil {
 		promLog.Errorln("apcaccess exited with error")
 		promLog.Errorln("  Error:", err.Error())
