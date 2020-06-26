@@ -42,16 +42,18 @@ func parseArgs() cliArgs {
 func main() {
 	args := parseArgs()
 
-	metric.ApcupsdAddr = args.apcupsdAddr
-	metric.ApcaccessPath = args.apcaccessPath
-	metric.ApcaccessFloodLimit = args.apcaccessFloodLimit
+	collector := &metric.Collector{
+		ApcupsdAddr:         args.apcupsdAddr,
+		ApcaccessPath:       args.apcaccessPath,
+		ApcaccessFloodLimit: args.apcaccessFloodLimit,
+		CollectInterval:     args.collectInterval,
+	}
+	collector.Init()
 
 	metric.RegisterPermanents()
-	go metric.Collect(metric.CollectChan)
-	go metric.CollectLoop(args.collectInterval)
 
-	http.HandleFunc("/metrics", server.HandleMetrics)
-	http.HandleFunc("/ws", server.HandleWs)
+	server.RegisterMetricEndpoints(collector)
+	server.RegisterWsEndpoints(collector)
 
 	promLog.Infof("Starting exporter at %s\n\n", args.listenAddr)
 	if err := http.ListenAndServe(args.listenAddr, nil); err != nil {

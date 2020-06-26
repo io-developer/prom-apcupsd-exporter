@@ -11,39 +11,39 @@ import (
 )
 
 var (
-	initialized = false
-	upgrader    = websocket.Upgrader{
+	wsUpgrader = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
 	}
-	activeConns     = map[*websocket.Conn]bool{}
-	onMsgPushCh     = make(chan clientMsg)
-	onModelChangeCh = make(chan *model.Model)
+	wsConnections     = map[*websocket.Conn]bool{}
+	wsOnMsgPushCh     = make(chan clientMsg)
+	wsOnModelChangeCh = make(chan *model.Model)
 )
 
-func init() {
-	if !initialized {
-		initialized = true
+// RegisterWsEndpoints ..
+func RegisterWsEndpoints(c *metric.Collector) {
+	collector = c
 
-		metric.CurrentModel.AddOnChange(onModelChangeCh)
+	collector.GetModel().AddOnChange(wsOnModelChangeCh)
 
-		go listenMsgPush()
-		go listenModelChange()
-	}
+	go listenMsgPush(wsOnMsgPushCh)
+	go listenModelChange(wsOnModelChangeCh)
+
+	http.HandleFunc("/ws", handleWs)
 }
 
 // HandleWs ..
-func HandleWs(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func handleWs(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		promLog.Errorln("WS upgrade:", err)
 		return
 	}
 
-	activeConns[conn] = true
+	wsConnections[conn] = true
 
-	onMsgPushCh <- clientMsg{
+	wsOnMsgPushCh <- clientMsg{
 		mtype: websocket.TextMessage,
 		data:  []byte("Init complete. Listening UPS events.."),
 		conn:  conn,
@@ -56,8 +56,8 @@ func Broadcast(text string) {
 }
 
 func broadcast(msgType int, msgData []byte) {
-	for conn := range activeConns {
-		onMsgPushCh <- clientMsg{
+	for conn := range wsConnections {
+		wsOnMsgPushCh <- clientMsg{
 			mtype: msgType,
 			data:  msgData,
 			conn:  conn,
@@ -71,9 +71,9 @@ type clientMsg struct {
 	conn  *websocket.Conn
 }
 
-func listenMsgPush() {
+func listenMsgPush(ch chan clientMsg) {
 	for {
-		if msg, ok := <-onMsgPushCh; ok {
+		if msg, ok := <-ch; ok {
 			onMsgPush(msg)
 		} else {
 			return
@@ -84,14 +84,14 @@ func listenMsgPush() {
 func onMsgPush(msg clientMsg) {
 	err := msg.conn.WriteMessage(msg.mtype, msg.data)
 	if err != nil {
-		delete(activeConns, msg.conn)
+		delete(wsConnections, msg.conn)
 		promLog.Errorln("WS write:", err)
 	}
 }
 
-func listenModelChange() {
+func listenModelChange(ch chan *model.Model) {
 	for {
-		if model, ok := <-onModelChangeCh; ok {
+		if model, ok := <-ch; ok {
 			onModelChange(model)
 		} else {
 			return

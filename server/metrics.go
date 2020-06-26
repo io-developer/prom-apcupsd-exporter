@@ -8,15 +8,23 @@ import (
 	promLog "github.com/prometheus/common/log"
 )
 
-var promHandler = promhttp.Handler()
+var (
+	collector   *metric.Collector
+	promHandler = promhttp.Handler()
+)
 
-// HandleMetrics ..
-func HandleMetrics(w http.ResponseWriter, r *http.Request) {
+// RegisterMetricEndpoints ..
+func RegisterMetricEndpoints(c *metric.Collector) {
+	collector = c
+	http.HandleFunc("/metrics", handleMetrics)
+}
+
+func handleMetrics(w http.ResponseWriter, r *http.Request) {
 	onComplete := make(chan bool)
-	metric.CollectChan <- metric.CollectOpts{
+	collector.Collect(metric.CollectOpts{
 		PreventFlood: true,
 		OnComplete:   onComplete,
-	}
+	})
 	if <-onComplete {
 		promLog.Infoln("ServeHTTP start")
 		promHandler.ServeHTTP(w, r)
