@@ -170,9 +170,7 @@ var AlarmModeTypes = map[string]interface{}{
 	"No alarm":    AlarmModeType(1),
 	"Always":      AlarmModeType(2),
 	"5 Seconds":   AlarmModeType(3),
-	"5":           AlarmModeType(3),
 	"30 Seconds":  AlarmModeType(4),
-	"30":          AlarmModeType(4),
 	"Low Battery": AlarmModeType(5),
 }
 

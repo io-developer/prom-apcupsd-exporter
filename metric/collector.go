@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	promLog "github.com/prometheus/common/log"
 )
 
@@ -22,8 +23,7 @@ type CollectorOtps struct {
 
 // Collector ..
 type Collector struct {
-	Opts CollectorOtps
-
+	opts         *CollectorOtps
 	started      bool
 	collectCh    chan CollectOpts
 	currModel    *model.Model
@@ -38,8 +38,7 @@ func NewCollector(opts CollectorOtps) *Collector {
 		opts.Factory = defaultFactory
 	}
 	return &Collector{
-		Opts: opts,
-
+		opts:       &opts,
 		collectCh:  make(chan CollectOpts),
 		currModel:  model.NewModel(),
 		lastOutput: apcupsd.NewOutput(""),
@@ -78,7 +77,7 @@ func (c *Collector) loopCollect() {
 		c.Collect(CollectOpts{
 			PreventFlood: true,
 		})
-		time.Sleep(c.Opts.CollectInterval)
+		time.Sleep(c.opts.CollectInterval)
 	}
 }
 
@@ -108,12 +107,12 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 	promLog.Infoln("updating apcupsd output..")
 
 	ts := time.Now().UnixNano()
-	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.Opts.ApcaccessFloodLimit) {
+	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.opts.ApcaccessFloodLimit) {
 		return
 	}
 	c.lastOutputTs = ts
 
-	cmdResult, err := exec.Command(c.Opts.ApcaccessPath, "status", c.Opts.ApcupsdAddr).Output()
+	cmdResult, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
 	if err != nil {
 		promLog.Errorln("apcaccess exited with error")
 		promLog.Errorln("  Error:", err.Error())
@@ -138,11 +137,17 @@ func (c *Collector) updateModel(opts CollectOpts) {
 func (c *Collector) updateMetrics(opts CollectOpts) {
 	promLog.Infoln("updating metrics..")
 
-	metrics, metricsChanged := c.Opts.Factory.GetMetrics()
+	state := c.currModel.State
+	c.opts.Factory.SetConstLabels(prometheus.Labels{
+		"ups_serial": state.UpsSerial,
+		"ups_model":  state.UpsModel,
+	})
+
+	metrics, metricsChanged := c.opts.Factory.GetMetrics()
 	if metricsChanged {
 		promLog.Infoln("metrics changed: unregistering old")
 		for _, metric := range c.metrics {
-			metric.Unregister()
+			metric.Destroy()
 		}
 	}
 

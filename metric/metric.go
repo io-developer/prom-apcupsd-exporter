@@ -22,7 +22,7 @@ type Metric struct {
 func (m *Metric) Register() {
 	if !m.isRegistered {
 		m.isRegistered = true
-		prometheus.MustRegister(m.Collector)
+		prometheus.Register(m.Collector)
 	}
 }
 
@@ -32,6 +32,13 @@ func (m *Metric) Unregister() {
 		m.isRegistered = false
 		prometheus.Unregister(m.Collector)
 	}
+}
+
+// Destroy method
+func (m *Metric) Destroy() {
+	m.Unregister()
+	m.HandlerFunc = nil
+	m.ValFunc = nil
 }
 
 // Update method

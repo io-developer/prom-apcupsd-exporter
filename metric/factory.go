@@ -31,7 +31,7 @@ func (f *Factory) SetConstLabels(labels prometheus.Labels) {
 	if labels == nil {
 		return
 	}
-	if len(labels) != len(f.constLabels) || reflect.DeepEqual(labels, f.constLabels) {
+	if len(labels) != len(f.constLabels) || !reflect.DeepEqual(labels, f.constLabels) {
 		f.currMetrics = nil
 	}
 	f.constLabels = labels
