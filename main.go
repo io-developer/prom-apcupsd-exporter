@@ -48,8 +48,6 @@ func main() {
 		ApcaccessFloodLimit: args.apcaccessFloodLimit,
 		CollectInterval:     args.collectInterval,
 	})
-
-	metric.RegisterPermanents()
 	collector.Start()
 
 	server.RegisterMetricEndpoints(collector)

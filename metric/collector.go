@@ -9,12 +9,15 @@ import (
 	promLog "github.com/prometheus/common/log"
 )
 
+var defaultFactory = NewFactory()
+
 // CollectorOtps ..
 type CollectorOtps struct {
 	ApcupsdAddr         string
 	ApcaccessPath       string
 	ApcaccessFloodLimit time.Duration
 	CollectInterval     time.Duration
+	Factory             *Factory
 }
 
 // Collector ..
@@ -26,10 +29,14 @@ type Collector struct {
 	currModel    *model.Model
 	lastOutput   *apcupsd.Output
 	lastOutputTs int64
+	metrics      []*Metric
 }
 
 // NewCollector ..
 func NewCollector(opts CollectorOtps) *Collector {
+	if opts.Factory == nil {
+		opts.Factory = defaultFactory
+	}
 	return &Collector{
 		Opts: opts,
 
@@ -68,23 +75,18 @@ func (c *Collector) Collect(opts CollectOpts) {
 
 func (c *Collector) loopCollect() {
 	for {
-		promLog.Infoln("loopCollect")
-
 		c.Collect(CollectOpts{
 			PreventFlood: true,
 		})
-		time.Sleep(c.Opts.ApcaccessFloodLimit)
+		time.Sleep(c.Opts.CollectInterval)
 	}
 }
 
 func (c *Collector) listenCollect() {
-	promLog.Infoln("listenCollect")
 	for {
 		if opts, ok := <-c.collectCh; ok {
-			promLog.Infoln("listenCollect OK")
 			c.collect(opts)
 		} else {
-			promLog.Infoln("listenCollect FAIL")
 			return
 		}
 	}
@@ -135,13 +137,20 @@ func (c *Collector) updateModel(opts CollectOpts) {
 
 func (c *Collector) updateMetrics(opts CollectOpts) {
 	promLog.Infoln("updating metrics..")
-	for _, metric := range Metrics {
-		if metric.HandlerFunc != nil {
-			metric.HandlerFunc(metric, c.currModel)
-		} else if metric.ValFunc != nil {
-			metric.UpdateCollector(metric.ValFunc(metric, c.currModel))
+
+	metrics, metricsChanged := c.Opts.Factory.GetMetrics()
+	if metricsChanged {
+		promLog.Infoln("metrics changed: unregistering old")
+		for _, metric := range c.metrics {
+			metric.Unregister()
 		}
 	}
+
+	c.metrics = metrics
+	for _, metric := range c.metrics {
+		metric.Update(c.currModel)
+	}
+
 	promLog.Infoln("metrics updated")
 }
 

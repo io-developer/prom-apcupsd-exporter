@@ -34,6 +34,18 @@ func (m *Metric) Unregister() {
 	}
 }
 
+// Update method
+func (m *Metric) Update(curModel *model.Model) {
+	if m.IsPermanent {
+		m.Register()
+	}
+	if m.HandlerFunc != nil {
+		m.HandlerFunc(m, curModel)
+	} else if m.ValFunc != nil {
+		m.UpdateCollector(m.ValFunc(m, curModel))
+	}
+}
+
 // UpdateCollector method
 func (m *Metric) UpdateCollector(val float64) {
 	if !m.IsPermanent && math.IsNaN(val) {
