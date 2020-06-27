@@ -13,13 +13,13 @@ var (
 	promHandler = promhttp.Handler()
 )
 
-// RegisterMetricEndpoints ..
-func RegisterMetricEndpoints(c *metric.Collector) {
+// MetricsRegister ..
+func MetricsRegister(c *metric.Collector) {
 	collector = c
-	http.HandleFunc("/metrics", handleMetrics)
+	http.HandleFunc("/metrics", metrcisHandle)
 }
 
-func handleMetrics(w http.ResponseWriter, r *http.Request) {
+func metrcisHandle(w http.ResponseWriter, r *http.Request) {
 	onComplete := make(chan bool)
 	collector.Collect(metric.CollectOpts{
 		PreventFlood: true,

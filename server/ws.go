@@ -6,36 +6,162 @@ import (
 	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
 	"net/http"
+	"time"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
 )
 
-var (
-	wsUpgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-	wsConnections     = map[*websocket.Conn]bool{}
-	wsPushMsgCh       = make(chan clientMsg)
-	wsOnModelChangeCh = make(chan *model.Model)
+const (
+	wsDefaultWriteWait      = 15 * time.Second
+	wsDefaultPongWait       = 10 * time.Second
+	wsDefaultPingPeriod     = 5 * time.Second
+	wsDefaultMaxMessageSize = int64(64 * 1024)
 )
 
-// RegisterWsEndpoints ..
-func RegisterWsEndpoints(c *metric.Collector) {
-	collector = c
-
-	collector.GetModel().AddOnChange(wsOnModelChangeCh)
-
-	go listenPushMsg(wsPushMsgCh)
-	go listenModelChange(wsOnModelChangeCh)
-
-	http.HandleFunc("/ws", handleWs)
+var wsUpgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
+var wsClients = map[*WsClient]bool{}
+
+// WsMsg ..
+type WsMsg struct {
+	msgType int
+	data    []byte
+}
+
+// WsClient ..
+type WsClient struct {
+	conn           *websocket.Conn
+	unregister     chan *WsClient
+	sendQueue      chan WsMsg
+	writeWait      time.Duration
+	pongWait       time.Duration
+	pingPeriod     time.Duration
+	maxMessageSize int64
+}
+
+// NewWsClient ..
+func NewWsClient(conn *websocket.Conn, unregister chan *WsClient) *WsClient {
+	c := &WsClient{
+		conn:           conn,
+		unregister:     unregister,
+		sendQueue:      make(chan WsMsg),
+		writeWait:      wsDefaultWriteWait,
+		pongWait:       wsDefaultPongWait,
+		pingPeriod:     wsDefaultPingPeriod,
+		maxMessageSize: wsDefaultMaxMessageSize,
+	}
+	go c.listenRead()
+	go c.listenSend()
+	return c
+}
+
+func (c *WsClient) listenRead() {
+	defer func() {
+		level.Debug(Logger).Log("msg", "listenRead unregistering")
+		c.unregister <- c
+		c.conn.Close()
+	}()
+
+	c.conn.SetReadLimit(c.maxMessageSize)
+	c.conn.SetPongHandler(func(string) error {
+		level.Debug(Logger).Log("msg", "listenRead SetPongHandler")
+		c.conn.SetReadDeadline(time.Now().Add(c.pongWait))
+		return nil
+	})
+	c.conn.SetReadDeadline(time.Now().Add(c.pongWait))
+
+	for {
+		msgType, msgData, err := c.conn.ReadMessage()
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				level.Debug(Logger).Log("msg", "listenRead unexpected close error", "err", err)
+			}
+			return
+		}
+		c.onReadMsg(WsMsg{
+			msgType: msgType,
+			data:    msgData,
+		})
+	}
+}
+
+func (c *WsClient) listenSend() {
+	ticker := time.NewTicker(c.pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
+	for {
+		select {
+
+		case msg, ok := <-c.sendQueue:
+			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
+			if !ok {
+				level.Debug(Logger).Log("msg", "listenSend conn closed")
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.conn.NextWriter(msg.msgType)
+			if err != nil {
+				level.Debug(Logger).Log("msg", "listenSend nextWiter error", "err", err)
+				return
+			}
+
+			w.Write(msg.data)
+			if err := w.Close(); err != nil {
+				level.Debug(Logger).Log("msg", "listenSend writer closing error", "err", err)
+				return
+			}
+
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				level.Debug(Logger).Log("msg", "listenSend ping error", "err", err)
+				return
+			}
+		}
+	}
+}
+
+func (c *WsClient) sendMsg(msg WsMsg) {
+	level.Debug(Logger).Log("msg", "sending msg to client")
+
+	err := c.conn.WriteMessage(msg.msgType, msg.data)
+	if err != nil {
+		level.Debug(Logger).Log("msg", "sendMsg error, unregistering client", "err", err)
+		c.unregister <- c
+	}
+}
+
+func (c *WsClient) onReadMsg(msg WsMsg) {
+	level.Debug(Logger).Log("msg", "onReadMsg", "type", msg.msgType, "text", string(msg.data))
+}
+
+// WsRegister ..
+func WsRegister(c *metric.Collector) {
+	collector = c
+
+	go wsListenUnregister()
+
+	changeQueue := make(chan *model.Model)
+	collector.GetModel().AddOnChange(changeQueue)
+	go wsListenModelChange(changeQueue)
+
+	http.HandleFunc("/ws", wsOnConnect)
+}
+
+var wsUnregisterQueue = make(chan *WsClient)
+
 // HandleWs ..
-func handleWs(w http.ResponseWriter, r *http.Request) {
+func wsOnConnect(w http.ResponseWriter, r *http.Request) {
 	level.Debug(Logger).Log("msg", "Incoming websocket connection")
 
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
@@ -44,8 +170,28 @@ func handleWs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	wsConnections[conn] = true
+	client := NewWsClient(conn, wsUnregisterQueue)
+	wsClients[client] = true
 
+	wsSendInit(client)
+}
+
+func wsListenUnregister() {
+	for {
+		client, ok := <-wsUnregisterQueue
+		if !ok {
+			level.Warn(Logger).Log("msg", "stop listening for clients unregistering")
+			return
+		}
+		if _, exists := wsClients[client]; exists {
+			delete(wsClients, client)
+		} else {
+			level.Warn(Logger).Log("msg", "unregister faile: client not registered")
+		}
+	}
+}
+
+func wsSendInit(client *WsClient) {
 	payload := map[string]interface{}{
 		"type":        "init",
 		"message":     "Init complete. Listening UPS events..",
@@ -56,81 +202,45 @@ func handleWs(w http.ResponseWriter, r *http.Request) {
 		level.Error(Logger).Log("msg", "init payload jsonErr", "err", err)
 		return
 	}
-	wsPushMsgCh <- clientMsg{
-		mtype: websocket.TextMessage,
-		data:  payloadJSON,
-		conn:  conn,
+	client.sendQueue <- WsMsg{
+		msgType: websocket.TextMessage,
+		data:    payloadJSON,
 	}
 }
 
-// Broadcast ..
-func Broadcast(text string) {
-	broadcast(websocket.TextMessage, []byte(text))
-}
-
-func broadcast(msgType int, msgData []byte) {
+func wsBroadcast(msgType int, msgData []byte) {
 	level.Debug(Logger).Log("msg", fmt.Sprintf(
-		"broadcasting msg to %d connections", len(wsConnections),
+		"broadcasting msg to %d connections", len(wsClients),
 	))
-	for conn := range wsConnections {
-		wsPushMsgCh <- clientMsg{
-			mtype: msgType,
-			data:  msgData,
-			conn:  conn,
+	for client := range wsClients {
+		client.sendQueue <- WsMsg{
+			msgType: msgType,
+			data:    msgData,
 		}
 	}
 }
 
-type clientMsg struct {
-	mtype int
-	data  []byte
-	conn  *websocket.Conn
-}
-
-func listenPushMsg(ch chan clientMsg) {
-	for {
-		if msg, ok := <-ch; ok {
-			pushMsg(msg)
-		} else {
-			return
-		}
-	}
-}
-
-func pushMsg(msg clientMsg) {
-	level.Debug(Logger).Log("msg", "send msg to client")
-
-	err := msg.conn.WriteMessage(msg.mtype, msg.data)
-	if err != nil {
-		level.Error(Logger).Log("msg", "pushMsg error, removing bad connection from list", "err", err)
-
-		delete(wsConnections, msg.conn)
-		defer msg.conn.Close()
-	}
-}
-
-func listenModelChange(ch chan *model.Model) {
+func wsListenModelChange(ch chan *model.Model) {
 	for {
 		if model, ok := <-ch; ok {
-			onModelChange(model)
+			wsOnModelChange(model)
 		} else {
 			return
 		}
 	}
 }
 
-func onModelChange(m *model.Model) {
+func wsOnModelChange(m *model.Model) {
 	level.Debug(Logger).Log(
 		"msg", "ws onModelChange",
 		"diff", fmt.Sprintf("%#v", m.ChangedFields),
 	)
-
 	payload := map[string]interface{}{
 		"type":             "change",
 		"model_state_diff": m.ChangedFields,
 	}
 	if jsonStr, err := json.Marshal(payload); err == nil {
-		broadcast(websocket.TextMessage, jsonStr)
+		wsBroadcast(websocket.TextMessage, jsonStr)
 	} else {
 		level.Warn(Logger).Log("msg", "onModelChange json error", "err", err)
 	}

@@ -84,8 +84,8 @@ func main() {
 	})
 	collector.Start()
 
-	server.RegisterMetricEndpoints(collector)
-	server.RegisterWsEndpoints(collector)
+	server.MetricsRegister(collector)
+	server.WsRegister(collector)
 
 	logger.Log("msg", fmt.Sprintf("Starting exporter at %s\n\n", args.listenAddr))
 
