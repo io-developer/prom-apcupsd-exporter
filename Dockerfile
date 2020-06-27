@@ -14,6 +14,7 @@ RUN \
   && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ADD bin/apcupsd_exporter /apcupsd_exporter
+RUN chmod +x /apcupsd_exporter
 
 EXPOSE 8001
 
