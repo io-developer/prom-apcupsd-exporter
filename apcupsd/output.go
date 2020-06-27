@@ -125,6 +125,9 @@ func parseTime(raw string) (val time.Time, err error) {
 		t, err = time.Parse("2006-01-02", raw)
 	}
 	if err != nil {
+		t, err = time.Parse("01/02/06", raw)
+	}
+	if err != nil {
 		return t, err
 	}
 	return t, nil
