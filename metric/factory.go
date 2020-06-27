@@ -233,7 +233,7 @@ func (f *Factory) createMetrics() []*Metric {
 		},
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name: "apcupsd_battery_external",
+				Name: "apcupsd_battery_externals",
 				Help: "**EXTBATTS** The number of external batteries as defined by the user. A correct number here helps the UPS compute the remaining runtime more accurately.",
 
 				ConstLabels: f.constLabels,
@@ -244,7 +244,7 @@ func (f *Factory) createMetrics() []*Metric {
 		},
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name: "apcupsd_battery_bad",
+				Name: "apcupsd_battery_bads",
 				Help: "**BADBATTS** The number of bad battery packs.",
 
 				ConstLabels: f.constLabels,
@@ -255,7 +255,7 @@ func (f *Factory) createMetrics() []*Metric {
 		},
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name: "apcupsd_battery_replaced_timestamp",
+				Name: "apcupsd_battery_replaced",
 				Help: "**BATTDATE** The date that batteries were last replaced.",
 
 				ConstLabels: f.constLabels,
@@ -268,7 +268,7 @@ func (f *Factory) createMetrics() []*Metric {
 		// Ups
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
-				Name: "apcupsd_ups_manafactured_timestamp",
+				Name: "apcupsd_ups_manafactured",
 				Help: "**MANDATE** The date the UPS was manufactured.",
 
 				ConstLabels: f.constLabels,

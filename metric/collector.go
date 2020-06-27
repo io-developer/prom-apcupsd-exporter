@@ -65,6 +65,11 @@ func (c *Collector) GetLastOutput() *apcupsd.Output {
 	return c.lastOutput
 }
 
+// GetFactory method
+func (c *Collector) GetFactory() *Factory {
+	return c.opts.Factory
+}
+
 // Collect method
 func (c *Collector) Collect(opts CollectOpts) {
 	promLog.Infoln("Collect")
@@ -138,7 +143,7 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 	promLog.Infoln("updating metrics..")
 
 	state := c.currModel.State
-	c.opts.Factory.SetConstLabels(prometheus.Labels{
+	c.GetFactory().SetConstLabels(prometheus.Labels{
 		"ups_serial": state.UpsSerial,
 		"ups_model":  state.UpsModel,
 	})
