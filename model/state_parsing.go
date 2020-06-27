@@ -2,120 +2,122 @@ package model
 
 import (
 	"local/apcupsd_exporter/apcupsd"
-	"time"
 )
 
+var defaultState = &State{}
+
 // NewStateFromOutput ..
-func NewStateFromOutput(o *apcupsd.Output) *State {
+func NewStateFromOutput(o *apcupsd.Output, def *State) *State {
+	if def == nil {
+		def = defaultState
+	}
 	return &State{
 		// input
 		InputSensivity: Sensivity{
-			Text: o.Get("SENSE", ""),
-			Type: o.GetMapped("SENSE", SensivityTypes,
-				SensivityType(0),
-			).(SensivityType),
+			Text: o.Get("SENSE", def.InputSensivity.Text),
+			Type: o.GetMapped("SENSE", SensivityTypes, def.InputSensivity.Type).(SensivityType),
 		},
-		InputFrequency:           o.GetFloat("LINEFREQ", 0),
-		InputVoltage:             o.GetFloat("LINEV", 0),
-		InputVoltageMin:          o.GetFloat("MINLINEV", 0),
-		InputVoltageMax:          o.GetFloat("MAXLINEV", 0),
-		InputVoltageNominal:      o.GetFloat("NOMINV", 0),
-		InputVoltageTransferLow:  o.GetFloat("LOTRANS", 0),
-		InputVoltageTransferHigh: o.GetFloat("HITRANS", 0),
+		InputFrequency:           o.GetFloat("LINEFREQ", def.InputFrequency),
+		InputVoltage:             o.GetFloat("LINEV", def.InputVoltage),
+		InputVoltageMin:          o.GetFloat("MINLINEV", def.InputVoltageMin),
+		InputVoltageMax:          o.GetFloat("MAXLINEV", def.InputVoltageMax),
+		InputVoltageNominal:      o.GetFloat("NOMINV", def.InputVoltageNominal),
+		InputVoltageTransferLow:  o.GetFloat("LOTRANS", def.InputVoltageTransferLow),
+		InputVoltageTransferHigh: o.GetFloat("HITRANS", def.InputVoltageTransferHigh),
 
 		// output
-		OutputLoad:           o.GetFloat("LOADPCT", 0),
-		OutputAmps:           o.GetFloat("OUTCURNT", 0),
-		OutputPowerNominal:   o.GetFloat("NOMPOWER", 0),
-		OutputVoltage:        o.GetFloat("OUTPUTV", 0),
-		OutputVoltageNominal: o.GetFloat("NOMOUTV", 0),
+		OutputLoad:           o.GetFloat("LOADPCT", def.OutputLoad),
+		OutputAmps:           o.GetFloat("OUTCURNT", def.OutputAmps),
+		OutputPowerNominal:   o.GetFloat("NOMPOWER", def.OutputPowerNominal),
+		OutputVoltage:        o.GetFloat("OUTPUTV", def.OutputVoltage),
+		OutputVoltageNominal: o.GetFloat("NOMOUTV", def.OutputVoltageNominal),
 
 		// battery
-		BatteryCharge:         o.GetFloat("BCHARGE", 0),
-		BatteryVoltage:        o.GetFloat("BATTV", 0),
-		BatteryVoltageNominal: o.GetFloat("NOMBATTV", 0),
-		BatteryExternalCount:  uint16(o.GetUint("EXTBATTS", 0)),
-		BatteryBadCount:       uint16(o.GetUint("BADBATTS", 0)),
-		BatteryReplacedDate:   o.GetTime("BATTDATE", time.Time{}),
+		BatteryCharge:         o.GetFloat("BCHARGE", def.BatteryCharge),
+		BatteryVoltage:        o.GetFloat("BATTV", def.BatteryVoltage),
+		BatteryVoltageNominal: o.GetFloat("NOMBATTV", def.BatteryVoltageNominal),
+		BatteryExternalCount:  uint16(o.GetUint("EXTBATTS", uint64(def.BatteryExternalCount))),
+		BatteryBadCount:       uint16(o.GetUint("BADBATTS", uint64(def.BatteryBadCount))),
+		BatteryReplacedDate:   o.GetTime("BATTDATE", def.BatteryReplacedDate),
 
 		// ups
-		UpsManafacturedDate: o.GetTime("MANDATE", time.Time{}),
-		UpsModel:            o.Get("MODEL", ""),
-		UpsSerial:           o.Get("SERIALNO", ""),
-		UpsFirmware:         o.Get("FIRMWARE", ""),
-		UpsName:             o.Get("UPSNAME", ""),
+		UpsManafacturedDate: o.GetTime("MANDATE", def.UpsManafacturedDate),
+		UpsModel:            o.Get("MODEL", def.UpsModel),
+		UpsSerial:           o.Get("SERIALNO", def.UpsSerial),
+		UpsFirmware:         o.Get("FIRMWARE", def.UpsFirmware),
+		UpsName:             o.Get("UPSNAME", def.UpsName),
 
 		UpsStatus: NewStatus(
-			o.GetUint("STATFLAG", 0),
-			o.Get("STATUS", ""),
+			o.GetUint("STATFLAG", def.UpsStatus.Flag),
+			o.Get("STATUS", def.UpsStatus.Text),
 		),
 
-		UpsDipSwitchFlag: o.GetUint("DIPSW", 0),
+		UpsDipSwitchFlag: o.GetUint("DIPSW", def.UpsDipSwitchFlag),
 
-		UpsReg1: o.GetUint("REG1", 0),
-		UpsReg2: o.GetUint("REG2", 0),
-		UpsReg3: o.GetUint("REG3", 0),
+		UpsReg1: o.GetUint("REG1", def.UpsReg1),
+		UpsReg2: o.GetUint("REG2", def.UpsReg2),
+		UpsReg3: o.GetUint("REG3", def.UpsReg3),
 
-		UpsTimeleftSeconds:           o.GetSeconds("TIMELEFT", 0),
-		UpsTimeleftSecondsLowBattery: o.GetSeconds("DLOWBATT", 0),
-		UpsTransferOnBatteryCount:    o.GetUint("NUMXFERS", 0),
+		UpsTimeleftSeconds:           o.GetSeconds("TIMELEFT", def.UpsTimeleftSeconds),
+		UpsTimeleftSecondsLowBattery: o.GetSeconds("DLOWBATT", def.UpsTimeleftSecondsLowBattery),
+		UpsTransferOnBatteryCount:    o.GetUint("NUMXFERS", def.UpsTransferOnBatteryCount),
 
 		UpsTransferOnBatteryReason: TransferOnbatteryReason{
-			Text: o.Get("LASTXFER", ""),
+			Text: o.Get("LASTXFER", def.UpsTransferOnBatteryReason.Text),
 			Type: o.GetMapped("LASTXFER", TransferOnbatteryReasonTypes,
-				TransferOnbatteryReasonType(0),
+				def.UpsTransferOnBatteryReason.Type,
 			).(TransferOnbatteryReasonType),
 		},
 
-		UpsTransferOnBatteryDate:  o.GetTime("XONBATT", time.Time{}),
-		UpsTransferOffBatteryDate: o.GetTime("XOFFBATT", time.Time{}),
+		UpsTransferOnBatteryDate:  o.GetTime("XONBATT", def.UpsTransferOnBatteryDate),
+		UpsTransferOffBatteryDate: o.GetTime("XOFFBATT", def.UpsTransferOnBatteryDate),
 
-		UpsOnBatterySeconds:           o.GetSeconds("TONBATT", 0),
-		UpsOnBatterySecondsCumulative: o.GetSeconds("CUMONBATT", 0),
+		UpsOnBatterySeconds:           o.GetSeconds("TONBATT", def.UpsOnBatterySeconds),
+		UpsOnBatterySecondsCumulative: o.GetSeconds("CUMONBATT", def.UpsOnBatterySecondsCumulative),
 
-		UpsTurnOffDelaySeconds: o.GetSeconds("DSHUTD", 0),
-		UpsTurnOnDelaySeconds:  o.GetSeconds("DWAKE", 0),
-		UpsTurnOnBatteryMin:    o.GetFloat("RETPCT", 0),
+		UpsTurnOffDelaySeconds: o.GetSeconds("DSHUTD", def.UpsTurnOffDelaySeconds),
+		UpsTurnOnDelaySeconds:  o.GetSeconds("DWAKE", def.UpsTurnOnDelaySeconds),
+		UpsTurnOnBatteryMin:    o.GetFloat("RETPCT", def.UpsTurnOnBatteryMin),
 
-		UpsTempInternal: o.GetFloat("ITEMP", 0),
-		UpsTempAmbient:  o.GetFloat("AMBTEMP", 0),
-		UpsHumidity:     o.GetFloat("HUMIDITY", 0),
+		UpsTempInternal: o.GetFloat("ITEMP", def.UpsTempInternal),
+		UpsTempAmbient:  o.GetFloat("AMBTEMP", def.UpsTempAmbient),
+		UpsHumidity:     o.GetFloat("HUMIDITY", def.UpsHumidity),
 
 		UpsAlarmMode: AlarmMode{
-			Text: o.Get("ALARMDEL", ""),
+			Text: o.Get("ALARMDEL", def.UpsAlarmMode.Text),
 			Type: o.GetMapped("ALARMDEL", AlarmModeTypes,
-				AlarmModeType(0),
+				def.UpsAlarmMode.Type,
 			).(AlarmModeType),
 		},
 
 		UpsSelftestResult: SelftestResult{
-			Text: o.Get("SELFTEST", ""),
+			Text: o.Get("SELFTEST", def.UpsSelftestResult.Text),
 			Type: o.GetMapped("SELFTEST", SelftestResultTypes,
-				SelftestResultType(0),
+				def.UpsSelftestResult.Type,
 			).(SelftestResultType),
 		},
-		UpsSelftestIntervalSeconds: o.GetSeconds("STESTI", 0),
+		UpsSelftestIntervalSeconds: o.GetSeconds("STESTI", def.UpsSelftestIntervalSeconds),
 
 		UpsCable: Cable{
-			Text: o.Get("CABLE", ""),
-			Type: o.GetMapped("CABLE", CableTypes, CableType(0)).(CableType),
+			Text: o.Get("CABLE", def.UpsCable.Text),
+			Type: o.GetMapped("CABLE", CableTypes, def.UpsCable.Type).(CableType),
 		},
 		UpsDriver: Driver{
-			Text: o.Get("DRIVER", ""),
-			Type: o.GetMapped("DRIVER", DriverTypes, DriverType(0)).(DriverType),
+			Text: o.Get("DRIVER", def.UpsDriver.Text),
+			Type: o.GetMapped("DRIVER", DriverTypes, def.UpsDriver.Type).(DriverType),
 		},
 		UpsMode: Mode{
-			Text: o.Get("UPSMODE", ""),
-			Type: o.GetMapped("UPSMODE", ModeTypes, ModeType(0)).(ModeType),
+			Text: o.Get("UPSMODE", def.UpsMode.Text),
+			Type: o.GetMapped("UPSMODE", ModeTypes, def.UpsMode.Type).(ModeType),
 		},
 
 		// shutdown
-		ShutdownBatteryMin:          o.GetFloat("MBATTCHG", 0),
-		ShutdownTimeleftSecondsMin:  o.GetSeconds("MINTIMEL", 0),
-		ShutdownOnBatterySecondsMax: o.GetSeconds("MAXTIME", 0),
+		ShutdownBatteryMin:          o.GetFloat("MBATTCHG", def.ShutdownBatteryMin),
+		ShutdownTimeleftSecondsMin:  o.GetSeconds("MINTIMEL", def.ShutdownTimeleftSecondsMin),
+		ShutdownOnBatterySecondsMax: o.GetSeconds("MAXTIME", def.ShutdownOnBatterySecondsMax),
 
 		// apcupsd
-		ApcupsdHost:    o.Get("HOSTNAME", ""),
-		ApcupsdVersion: o.Get("VERSION", ""),
+		ApcupsdHost:    o.Get("HOSTNAME", def.ApcupsdHost),
+		ApcupsdVersion: o.Get("VERSION", def.ApcupsdVersion),
 	}
 }

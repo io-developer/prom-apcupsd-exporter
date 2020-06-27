@@ -19,6 +19,7 @@ type CollectorOtps struct {
 	ApcaccessFloodLimit time.Duration
 	CollectInterval     time.Duration
 	Factory             *Factory
+	DefaultState        *model.State
 }
 
 // Collector ..
@@ -132,7 +133,7 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 func (c *Collector) updateModel(opts CollectOpts) {
 	promLog.Infoln("updating model..")
 
-	c.currModel.Update(model.NewStateFromOutput(c.lastOutput))
+	c.currModel.Update(model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState))
 
 	for field, diff := range c.currModel.ChangedFields {
 		promLog.Infof("field changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
