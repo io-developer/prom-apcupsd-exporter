@@ -3,16 +3,28 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
 	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
 	"local/apcupsd_exporter/server"
 	"net/http"
 	"time"
 
-	promLog "github.com/prometheus/common/log"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/prometheus/common/promlog"
 )
 
+var logger log.Logger
+
+func createLogger(logLevel string) log.Logger {
+	l := &promlog.AllowedLevel{}
+	l.Set(logLevel)
+	return promlog.New(&promlog.Config{Level: l})
+}
+
 type cliArgs struct {
+	logLevel            string
 	listenAddr          string
 	apcupsdAddr         string
 	apcaccessPath       string
@@ -22,6 +34,7 @@ type cliArgs struct {
 }
 
 func parseArgs() cliArgs {
+	loglevel := flag.String("loglevel", "info", "Options: debug, info, warn, error")
 	listen := flag.String("listen", "0.0.0.0:8001", "ip:port")
 	apcupsd := flag.String("apcupsd", "127.0.0.1:3551", "apcupsd host:port")
 	apcaccess := flag.String("apcaccess", "/sbin/apcaccess", "apcaccess path")
@@ -35,6 +48,7 @@ func parseArgs() cliArgs {
 	flag.Parse()
 
 	args := cliArgs{
+		logLevel:            *loglevel,
 		listenAddr:          *listen,
 		apcupsdAddr:         *apcupsd,
 		apcaccessPath:       *apcaccess,
@@ -45,18 +59,21 @@ func parseArgs() cliArgs {
 	if *defStateJSON != "" {
 		args.defaultState = &model.State{}
 		if err := json.Unmarshal([]byte(*defStateJSON), args.defaultState); err != nil {
-			promLog.Errorln("Error on parsing 'default_model_state':", err)
 			args.defaultState = nil
 		}
 	}
-
-	promLog.Infof("Parsed cli args:\n %#v\n\n", args)
 
 	return args
 }
 
 func main() {
 	args := parseArgs()
+
+	logger = createLogger(args.logLevel)
+	metric.Logger = logger
+	server.Logger = logger
+
+	level.Debug(logger).Log("msg", fmt.Sprintf("Parsed cli args:\n %#v\n\n", args))
 
 	collector := metric.NewCollector(metric.CollectorOtps{
 		ApcupsdAddr:         args.apcupsdAddr,
@@ -70,8 +87,9 @@ func main() {
 	server.RegisterMetricEndpoints(collector)
 	server.RegisterWsEndpoints(collector)
 
-	promLog.Infof("Starting exporter at %s\n\n", args.listenAddr)
+	logger.Log("msg", fmt.Sprintf("Starting exporter at %s\n\n", args.listenAddr))
+
 	if err := http.ListenAndServe(args.listenAddr, nil); err != nil {
-		promLog.Fatalln("Cant start server: ", err.Error())
+		level.Error(logger).Log("msg", "Can't start server", "err", err)
 	}
 }

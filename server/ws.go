@@ -2,12 +2,13 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
 	"net/http"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
-	promLog "github.com/prometheus/common/log"
 )
 
 var (
@@ -35,9 +36,11 @@ func RegisterWsEndpoints(c *metric.Collector) {
 
 // HandleWs ..
 func handleWs(w http.ResponseWriter, r *http.Request) {
+	level.Debug(Logger).Log("msg", "Incoming websocket connection")
+
 	conn, err := wsUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		promLog.Errorln("WS upgrade:", err)
+		level.Error(Logger).Log("msg", "connection upgrade error", "err", err)
 		return
 	}
 
@@ -50,7 +53,7 @@ func handleWs(w http.ResponseWriter, r *http.Request) {
 	}
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
-		promLog.Errorln("WS handleModelChange jsonErr", err)
+		level.Error(Logger).Log("msg", "init payload jsonErr", "err", err)
 		return
 	}
 	wsPushMsgCh <- clientMsg{
@@ -66,6 +69,9 @@ func Broadcast(text string) {
 }
 
 func broadcast(msgType int, msgData []byte) {
+	level.Debug(Logger).Log("msg", fmt.Sprintf(
+		"broadcasting msg to %d connections", len(wsConnections),
+	))
 	for conn := range wsConnections {
 		wsPushMsgCh <- clientMsg{
 			mtype: msgType,
@@ -92,11 +98,14 @@ func listenPushMsg(ch chan clientMsg) {
 }
 
 func pushMsg(msg clientMsg) {
+	level.Debug(Logger).Log("msg", "send msg to client")
+
 	err := msg.conn.WriteMessage(msg.mtype, msg.data)
 	if err != nil {
+		level.Error(Logger).Log("msg", "pushMsg error, removing bad connection from list", "err", err)
+
 		delete(wsConnections, msg.conn)
-		promLog.Errorln("WS write:", err)
-		promLog.Errorln("  removing bad connection from list")
+		defer msg.conn.Close()
 	}
 }
 
@@ -111,7 +120,10 @@ func listenModelChange(ch chan *model.Model) {
 }
 
 func onModelChange(m *model.Model) {
-	promLog.Warnln("WS handleModelChange", m.ChangedFields)
+	level.Debug(Logger).Log(
+		"msg", "ws onModelChange",
+		"diff", fmt.Sprintf("%#v", m.ChangedFields),
+	)
 
 	payload := map[string]interface{}{
 		"type":             "change",
@@ -120,6 +132,6 @@ func onModelChange(m *model.Model) {
 	if jsonStr, err := json.Marshal(payload); err == nil {
 		broadcast(websocket.TextMessage, jsonStr)
 	} else {
-		promLog.Warnln("WS handleModelChange jsonErr", err)
+		level.Warn(Logger).Log("msg", "onModelChange json error", "err", err)
 	}
 }

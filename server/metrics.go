@@ -4,8 +4,8 @@ import (
 	"local/apcupsd_exporter/metric"
 	"net/http"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	promLog "github.com/prometheus/common/log"
 )
 
 var (
@@ -26,8 +26,8 @@ func handleMetrics(w http.ResponseWriter, r *http.Request) {
 		OnComplete:   onComplete,
 	})
 	if <-onComplete {
-		promLog.Infoln("ServeHTTP start")
+		level.Debug(Logger).Log("msg", "handleMetrics begin")
 		promHandler.ServeHTTP(w, r)
-		promLog.Infoln("ServeHTTP end")
+		level.Debug(Logger).Log("msg", "handleMetrics end")
 	}
 }

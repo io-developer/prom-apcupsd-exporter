@@ -1,13 +1,14 @@
 package metric
 
 import (
+	"fmt"
 	"local/apcupsd_exporter/apcupsd"
 	"local/apcupsd_exporter/model"
 	"os/exec"
 	"time"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
-	promLog "github.com/prometheus/common/log"
 )
 
 var defaultFactory = NewFactory()
@@ -73,7 +74,7 @@ func (c *Collector) GetFactory() *Factory {
 
 // Collect method
 func (c *Collector) Collect(opts CollectOpts) {
-	promLog.Infoln("Collect")
+	level.Debug(Logger).Log("msg", "collect requested")
 
 	c.collectCh <- opts
 }
@@ -98,7 +99,7 @@ func (c *Collector) listenCollect() {
 }
 
 func (c *Collector) collect(opts CollectOpts) {
-	promLog.Infoln("collect()")
+	level.Debug(Logger).Log("msg", "collect begin -->")
 
 	c.updateOutput(opts)
 	c.updateModel(opts)
@@ -107,22 +108,26 @@ func (c *Collector) collect(opts CollectOpts) {
 	if opts.OnComplete != nil {
 		opts.OnComplete <- true
 	}
+	level.Debug(Logger).Log("msg", "collect end <--")
 }
 
 func (c *Collector) updateOutput(opts CollectOpts) {
-	promLog.Infoln("updating apcupsd output..")
+	level.Debug(Logger).Log("msg", "collect: pending apcupsd output")
 
 	ts := time.Now().UnixNano()
 	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.opts.ApcaccessFloodLimit) {
+		level.Debug(Logger).Log("msg", "collect: apcupsd flood detected, skipping")
 		return
 	}
 	c.lastOutputTs = ts
 
 	cmdResult, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
 	if err != nil {
-		promLog.Errorln("apcaccess exited with error")
-		promLog.Errorln("  Error:", err.Error())
-		promLog.Errorln("  Result:", string(cmdResult))
+		level.Error(Logger).Log(
+			"msg", "apcaccess cmd exited with error",
+			"err", err,
+			"result", string(cmdResult),
+		)
 		cmdResult = []byte{}
 	}
 
@@ -131,17 +136,21 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 }
 
 func (c *Collector) updateModel(opts CollectOpts) {
-	promLog.Infoln("updating model..")
+	level.Debug(Logger).Log("msg", "collect: updating model")
 
 	c.currModel.Update(model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState))
 
 	for field, diff := range c.currModel.ChangedFields {
-		promLog.Infof("field changed '%s'\n  OLD: %#v\n  NEW: %#v\n", field, diff[0], diff[1])
+		level.Info(Logger).Log(
+			"change", field,
+			"old", fmt.Sprintf("%#v", diff[0]),
+			"new", fmt.Sprintf("%#v", diff[1]),
+		)
 	}
 }
 
 func (c *Collector) updateMetrics(opts CollectOpts) {
-	promLog.Infoln("updating metrics..")
+	level.Debug(Logger).Log("msg", "collect: updating metrics")
 
 	state := c.currModel.State
 	c.GetFactory().SetConstLabels(prometheus.Labels{
@@ -151,9 +160,10 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 
 	metrics, metricsChanged := c.opts.Factory.GetMetrics()
 	if metricsChanged {
-		promLog.Infoln("metrics changed: unregistering old")
+		level.Debug(Logger).Log("msg", "collect: metrics changed, rebuilding..")
+
 		for _, metric := range c.metrics {
-			metric.Destroy()
+			metric.Unregister()
 		}
 	}
 
@@ -161,8 +171,6 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 	for _, metric := range c.metrics {
 		metric.Update(c.currModel)
 	}
-
-	promLog.Infoln("metrics updated")
 }
 
 // CollectOpts ..

@@ -34,13 +34,6 @@ func (m *Metric) Unregister() {
 	}
 }
 
-// Destroy method
-func (m *Metric) Destroy() {
-	m.Unregister()
-	m.HandlerFunc = nil
-	m.ValFunc = nil
-}
-
 // Update method
 func (m *Metric) Update(curModel *model.Model) {
 	if m.IsPermanent {
