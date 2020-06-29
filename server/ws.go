@@ -89,6 +89,15 @@ func wsSendInit(client *WsClient) {
 	}
 }
 
+// WsBroadcastData ..
+func WsBroadcastData(data map[string]interface{}) {
+	if jsonStr, err := json.Marshal(data); err == nil {
+		wsBroadcast(websocket.TextMessage, jsonStr)
+	} else {
+		level.Warn(logger).Log("msg", "wsBroadcastData json error", "err", err)
+	}
+}
+
 func wsBroadcast(msgType int, msgData []byte) {
 	level.Debug(logger).Log("msg", fmt.Sprintf(
 		"broadcasting msg to %d connections", len(wsClients),
@@ -116,15 +125,10 @@ func wsOnModelChange(m *model.Model) {
 		"msg", "ws onModelChange",
 		"diff", fmt.Sprintf("%#v", m.ChangedFields),
 	)
-	payload := map[string]interface{}{
+	WsBroadcastData(map[string]interface{}{
 		"type":             "change",
 		"model_state_diff": m.ChangedFields,
-	}
-	if jsonStr, err := json.Marshal(payload); err == nil {
-		wsBroadcast(websocket.TextMessage, jsonStr)
-	} else {
-		level.Warn(logger).Log("msg", "onModelChange json error", "err", err)
-	}
+	})
 }
 
 // WsMsg ..
