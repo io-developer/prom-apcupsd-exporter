@@ -176,6 +176,17 @@ func (f *Factory) createMetrics() []*Metric {
 		},
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
+				Name: "apcupsd_output_power_apparent_nominal",
+				Help: "**NOMAPNT** VA.",
+
+				ConstLabels: f.constLabels,
+			}),
+			ValFunc: func(m *Metric, model *model.Model) float64 {
+				return model.State.OutputPowerApparentNominal
+			},
+		},
+		{
+			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_output_voltage",
 				Help: "**OUTPUTV** The voltage the UPS is supplying to your equipment",
 

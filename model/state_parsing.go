@@ -26,11 +26,12 @@ func NewStateFromOutput(o *apcupsd.Output, def *State) *State {
 		InputVoltageTransferHigh: o.GetFloat("HITRANS", def.InputVoltageTransferHigh),
 
 		// output
-		OutputLoad:           o.GetFloat("LOADPCT", def.OutputLoad),
-		OutputAmps:           o.GetFloat("OUTCURNT", def.OutputAmps),
-		OutputPowerNominal:   o.GetFloat("NOMPOWER", def.OutputPowerNominal),
-		OutputVoltage:        o.GetFloat("OUTPUTV", def.OutputVoltage),
-		OutputVoltageNominal: o.GetFloat("NOMOUTV", def.OutputVoltageNominal),
+		OutputLoad:                 o.GetFloat("LOADPCT", def.OutputLoad),
+		OutputAmps:                 o.GetFloat("OUTCURNT", def.OutputAmps),
+		OutputPowerNominal:         o.GetFloat("NOMPOWER", def.OutputPowerNominal),
+		OutputPowerApparentNominal: o.GetFloat("NOMAPNT", def.OutputPowerApparentNominal),
+		OutputVoltage:              o.GetFloat("OUTPUTV", def.OutputVoltage),
+		OutputVoltageNominal:       o.GetFloat("NOMOUTV", def.OutputVoltageNominal),
 
 		// battery
 		BatteryCharge:         o.GetFloat("BCHARGE", def.BatteryCharge),

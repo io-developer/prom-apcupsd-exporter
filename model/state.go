@@ -19,11 +19,12 @@ type State struct {
 	InputVoltageTransferHigh float64
 
 	// output
-	OutputLoad           float64
-	OutputAmps           float64
-	OutputPowerNominal   float64
-	OutputVoltage        float64
-	OutputVoltageNominal float64
+	OutputLoad                 float64
+	OutputAmps                 float64
+	OutputPowerNominal         float64
+	OutputPowerApparentNominal float64
+	OutputVoltage              float64
+	OutputVoltageNominal       float64
 
 	// battery
 	BatteryCharge         float64
