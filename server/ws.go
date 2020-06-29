@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
 	"net/http"
 	"time"
@@ -19,15 +18,114 @@ const (
 	wsDefaultMaxMessageSize = int64(64 * 1024)
 )
 
-var wsUpgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+var (
+	wsUpgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	wsClients         = map[*WsClient]bool{}
+	wsUnregisterQueue = make(chan *WsClient)
+)
+
+// wsInit ..
+func wsInit() {
+	go wsListenUnregister()
+
+	changeQueue := make(chan *model.Model)
+	collector.GetModel().AddOnChange(changeQueue)
+	go wsListenModelChange(changeQueue)
+
+	http.HandleFunc("/ws", wsOnConnect)
 }
 
-var wsClients = map[*WsClient]bool{}
+// HandleWs ..
+func wsOnConnect(w http.ResponseWriter, r *http.Request) {
+	level.Debug(logger).Log("msg", "Incoming websocket connection")
+
+	conn, err := wsUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		level.Error(logger).Log("msg", "connection upgrade error", "err", err)
+		return
+	}
+
+	client := NewWsClient(conn, wsUnregisterQueue)
+	wsClients[client] = true
+
+	wsSendInit(client)
+}
+
+func wsListenUnregister() {
+	for {
+		client, ok := <-wsUnregisterQueue
+		if !ok {
+			level.Warn(logger).Log("msg", "stop listening for clients unregistering")
+			return
+		}
+		if _, exists := wsClients[client]; exists {
+			delete(wsClients, client)
+		} else {
+			level.Warn(logger).Log("msg", "unregister faile: client not registered")
+		}
+	}
+}
+
+func wsSendInit(client *WsClient) {
+	payload := map[string]interface{}{
+		"type":        "init",
+		"message":     "Init complete. Listening UPS events..",
+		"model_state": collector.GetModel().State,
+	}
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		level.Error(logger).Log("msg", "init payload jsonErr", "err", err)
+		return
+	}
+	client.sendQueue <- WsMsg{
+		msgType: websocket.TextMessage,
+		data:    payloadJSON,
+	}
+}
+
+func wsBroadcast(msgType int, msgData []byte) {
+	level.Debug(logger).Log("msg", fmt.Sprintf(
+		"broadcasting msg to %d connections", len(wsClients),
+	))
+	for client := range wsClients {
+		client.sendQueue <- WsMsg{
+			msgType: msgType,
+			data:    msgData,
+		}
+	}
+}
+
+func wsListenModelChange(ch chan *model.Model) {
+	for {
+		if model, ok := <-ch; ok {
+			wsOnModelChange(model)
+		} else {
+			return
+		}
+	}
+}
+
+func wsOnModelChange(m *model.Model) {
+	level.Debug(logger).Log(
+		"msg", "ws onModelChange",
+		"diff", fmt.Sprintf("%#v", m.ChangedFields),
+	)
+	payload := map[string]interface{}{
+		"type":             "change",
+		"model_state_diff": m.ChangedFields,
+	}
+	if jsonStr, err := json.Marshal(payload); err == nil {
+		wsBroadcast(websocket.TextMessage, jsonStr)
+	} else {
+		level.Warn(logger).Log("msg", "onModelChange json error", "err", err)
+	}
+}
 
 // WsMsg ..
 type WsMsg struct {
@@ -64,14 +162,14 @@ func NewWsClient(conn *websocket.Conn, unregister chan *WsClient) *WsClient {
 
 func (c *WsClient) listenRead() {
 	defer func() {
-		level.Debug(Logger).Log("msg", "listenRead unregistering")
+		level.Debug(logger).Log("msg", "listenRead unregistering")
 		c.unregister <- c
 		c.conn.Close()
 	}()
 
 	c.conn.SetReadLimit(c.maxMessageSize)
 	c.conn.SetPongHandler(func(string) error {
-		level.Debug(Logger).Log("msg", "listenRead SetPongHandler")
+		level.Debug(logger).Log("msg", "listenRead SetPongHandler")
 		c.conn.SetReadDeadline(time.Now().Add(c.pongWait))
 		return nil
 	})
@@ -81,7 +179,7 @@ func (c *WsClient) listenRead() {
 		msgType, msgData, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				level.Debug(Logger).Log("msg", "listenRead unexpected close error", "err", err)
+				level.Debug(logger).Log("msg", "listenRead unexpected close error", "err", err)
 			}
 			return
 		}
@@ -104,27 +202,27 @@ func (c *WsClient) listenSend() {
 		case msg, ok := <-c.sendQueue:
 			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 			if !ok {
-				level.Debug(Logger).Log("msg", "listenSend conn closed")
+				level.Debug(logger).Log("msg", "listenSend conn closed")
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
 
 			w, err := c.conn.NextWriter(msg.msgType)
 			if err != nil {
-				level.Debug(Logger).Log("msg", "listenSend nextWiter error", "err", err)
+				level.Debug(logger).Log("msg", "listenSend nextWiter error", "err", err)
 				return
 			}
 
 			w.Write(msg.data)
 			if err := w.Close(); err != nil {
-				level.Debug(Logger).Log("msg", "listenSend writer closing error", "err", err)
+				level.Debug(logger).Log("msg", "listenSend writer closing error", "err", err)
 				return
 			}
 
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(c.writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				level.Debug(Logger).Log("msg", "listenSend ping error", "err", err)
+				level.Debug(logger).Log("msg", "listenSend ping error", "err", err)
 				return
 			}
 		}
@@ -132,116 +230,15 @@ func (c *WsClient) listenSend() {
 }
 
 func (c *WsClient) sendMsg(msg WsMsg) {
-	level.Debug(Logger).Log("msg", "sending msg to client")
+	level.Debug(logger).Log("msg", "sending msg to client")
 
 	err := c.conn.WriteMessage(msg.msgType, msg.data)
 	if err != nil {
-		level.Debug(Logger).Log("msg", "sendMsg error, unregistering client", "err", err)
+		level.Debug(logger).Log("msg", "sendMsg error, unregistering client", "err", err)
 		c.unregister <- c
 	}
 }
 
 func (c *WsClient) onReadMsg(msg WsMsg) {
-	level.Debug(Logger).Log("msg", "onReadMsg", "type", msg.msgType, "text", string(msg.data))
-}
-
-// WsRegister ..
-func WsRegister(c *metric.Collector) {
-	collector = c
-
-	go wsListenUnregister()
-
-	changeQueue := make(chan *model.Model)
-	collector.GetModel().AddOnChange(changeQueue)
-	go wsListenModelChange(changeQueue)
-
-	http.HandleFunc("/ws", wsOnConnect)
-}
-
-var wsUnregisterQueue = make(chan *WsClient)
-
-// HandleWs ..
-func wsOnConnect(w http.ResponseWriter, r *http.Request) {
-	level.Debug(Logger).Log("msg", "Incoming websocket connection")
-
-	conn, err := wsUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		level.Error(Logger).Log("msg", "connection upgrade error", "err", err)
-		return
-	}
-
-	client := NewWsClient(conn, wsUnregisterQueue)
-	wsClients[client] = true
-
-	wsSendInit(client)
-}
-
-func wsListenUnregister() {
-	for {
-		client, ok := <-wsUnregisterQueue
-		if !ok {
-			level.Warn(Logger).Log("msg", "stop listening for clients unregistering")
-			return
-		}
-		if _, exists := wsClients[client]; exists {
-			delete(wsClients, client)
-		} else {
-			level.Warn(Logger).Log("msg", "unregister faile: client not registered")
-		}
-	}
-}
-
-func wsSendInit(client *WsClient) {
-	payload := map[string]interface{}{
-		"type":        "init",
-		"message":     "Init complete. Listening UPS events..",
-		"model_state": collector.GetModel().State,
-	}
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		level.Error(Logger).Log("msg", "init payload jsonErr", "err", err)
-		return
-	}
-	client.sendQueue <- WsMsg{
-		msgType: websocket.TextMessage,
-		data:    payloadJSON,
-	}
-}
-
-func wsBroadcast(msgType int, msgData []byte) {
-	level.Debug(Logger).Log("msg", fmt.Sprintf(
-		"broadcasting msg to %d connections", len(wsClients),
-	))
-	for client := range wsClients {
-		client.sendQueue <- WsMsg{
-			msgType: msgType,
-			data:    msgData,
-		}
-	}
-}
-
-func wsListenModelChange(ch chan *model.Model) {
-	for {
-		if model, ok := <-ch; ok {
-			wsOnModelChange(model)
-		} else {
-			return
-		}
-	}
-}
-
-func wsOnModelChange(m *model.Model) {
-	level.Debug(Logger).Log(
-		"msg", "ws onModelChange",
-		"diff", fmt.Sprintf("%#v", m.ChangedFields),
-	)
-	payload := map[string]interface{}{
-		"type":             "change",
-		"model_state_diff": m.ChangedFields,
-	}
-	if jsonStr, err := json.Marshal(payload); err == nil {
-		wsBroadcast(websocket.TextMessage, jsonStr)
-	} else {
-		level.Warn(Logger).Log("msg", "onModelChange json error", "err", err)
-	}
+	level.Debug(logger).Log("msg", "onReadMsg", "type", msg.msgType, "text", string(msg.data))
 }

@@ -8,14 +8,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var (
-	collector   *metric.Collector
-	promHandler = promhttp.Handler()
-)
+var metricsPromHandler = promhttp.Handler()
 
-// MetricsRegister ..
-func MetricsRegister(c *metric.Collector) {
-	collector = c
+// metricsInit ..
+func metricsInit() {
 	http.HandleFunc("/metrics", metrcisHandle)
 }
 
@@ -26,8 +22,8 @@ func metrcisHandle(w http.ResponseWriter, r *http.Request) {
 		OnComplete:   onComplete,
 	})
 	if <-onComplete {
-		level.Debug(Logger).Log("msg", "handleMetrics begin")
-		promHandler.ServeHTTP(w, r)
-		level.Debug(Logger).Log("msg", "handleMetrics end")
+		level.Debug(logger).Log("msg", "metrcisHandle begin")
+		metricsPromHandler.ServeHTTP(w, r)
+		level.Debug(logger).Log("msg", "metrcisHandle end")
 	}
 }

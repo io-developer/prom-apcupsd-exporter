@@ -71,7 +71,6 @@ func main() {
 
 	logger = createLogger(args.logLevel)
 	metric.Logger = logger
-	server.Logger = logger
 
 	level.Debug(logger).Log("msg", fmt.Sprintf("Parsed cli args:\n %#v\n\n", args))
 
@@ -84,8 +83,7 @@ func main() {
 	})
 	collector.Start()
 
-	server.MetricsRegister(collector)
-	server.WsRegister(collector)
+	server.Init(logger, collector)
 
 	logger.Log("msg", fmt.Sprintf("Starting exporter at %s\n\n", args.listenAddr))
 
