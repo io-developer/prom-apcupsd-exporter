@@ -117,6 +117,23 @@ func (s *State) Compare(b *State) (equal bool, diff map[string][]interface{}) {
 	return len(diff) == 0, diff
 }
 
+// GetLastUpsOnBatteryDuration - last or current (if on battery)
+func (s *State) GetLastUpsOnBatteryDuration() time.Duration {
+	ondate := s.UpsTransferOnBatteryDate
+	offdate := s.UpsTransferOffBatteryDate
+	if offdate.Sub(ondate) < 0 {
+		return time.Now().Sub(ondate)
+	}
+	if s.UpsOnBatterySeconds > 0 {
+		return time.Duration(s.UpsOnBatterySeconds) * time.Second
+	}
+	delta := s.UpsTransferOffBatteryDate.Sub(s.UpsTransferOnBatteryDate)
+	if delta > 0 {
+		return delta
+	}
+	return 0
+}
+
 // Sensivity ..
 type Sensivity struct {
 	Type SensivityType

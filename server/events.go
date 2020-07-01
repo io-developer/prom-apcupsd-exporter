@@ -1,8 +1,10 @@
 package server
 
 import (
+	"fmt"
 	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
+	"math"
 	"net/http"
 	"time"
 )
@@ -81,13 +83,44 @@ func eventsHandle(event string, w http.ResponseWriter, r *http.Request) {
 	})
 	w.Write([]byte("ok"))
 
-	collector.GetModel().AddEvent(model.Event{
+	ev := model.Event{
 		Ts:   time.Now(),
 		Name: event,
-		Text: "Text about " + event,
-	})
+	}
 
+	m := collector.GetModel()
+	if event == "offbattery" {
+		ev = handleEventOffbattery(m, ev)
+	}
+
+	m.AddEvent(ev)
 	collector.Collect(metric.CollectOpts{
 		PreventFlood: false,
 	})
+}
+
+func handleEventOffbattery(m *model.Model, ev model.Event) model.Event {
+	ondate := m.State.UpsTransferOnBatteryDate
+	offdate := m.State.UpsTransferOffBatteryDate
+
+	deltaOn := offdate.Sub(ondate).Seconds()
+	deltaNow := offdate.Sub(time.Now()).Seconds()
+
+	if deltaOn < 0 || math.Abs(deltaNow) < 30 {
+		ev.Text = fmt.Sprintf(
+			"{duration: \"%s\"}",
+			fmtDuration(m.State.GetLastUpsOnBatteryDuration()),
+		)
+	}
+	return ev
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+	h := d / time.Hour
+	d -= h * time.Hour
+	m := d / time.Minute
+	d -= m * time.Minute
+	s := d / time.Second
+	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }
