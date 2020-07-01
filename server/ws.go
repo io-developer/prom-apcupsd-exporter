@@ -72,9 +72,10 @@ func wsListenUnregister() {
 
 func wsSendInit(client *WsClient) {
 	payload := map[string]interface{}{
-		"type":        "init",
-		"message":     "Init complete. Listening UPS events..",
-		"model_state": collector.GetModel().State,
+		"type":         "init",
+		"message":      "Init complete. Listening UPS events..",
+		"model_state":  collector.GetModel().State,
+		"model_events": collector.GetModel().GetEvents(),
 	}
 	payloadJSON, err := json.Marshal(payload)
 	if err != nil {
@@ -112,10 +113,12 @@ func wsOnModelChange(m *model.Model) {
 	level.Debug(logger).Log(
 		"msg", "ws onModelChange",
 		"diff", fmt.Sprintf("%#v", m.ChangedFields),
+		"events", fmt.Sprintf("%#v", m.NewEvents),
 	)
 	WsBroadcastData(map[string]interface{}{
 		"type":             "change",
 		"model_state_diff": m.ChangedFields,
+		"model_events_new": m.NewEvents,
 	})
 }
 

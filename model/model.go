@@ -1,9 +1,15 @@
 package model
 
+import "time"
+
+const defaultEventLimit = 20
+
 // Model data
 type Model struct {
 	State         *State
 	PrevState     *State
+	events        []Event
+	NewEvents     []Event
 	ChangedFields map[string][]interface{}
 	onChange      []func(*Model)
 }
@@ -14,6 +20,8 @@ func NewModel() *Model {
 		State:         NewState(),
 		PrevState:     NewState(),
 		ChangedFields: map[string][]interface{}{},
+		events:        []Event{},
+		NewEvents:     []Event{},
 		onChange:      []func(*Model){},
 	}
 }
@@ -21,6 +29,16 @@ func NewModel() *Model {
 // AddOnChange ..
 func (m *Model) AddOnChange(handler func(*Model)) {
 	m.onChange = append(m.onChange, handler)
+}
+
+// GetEvents ..
+func (m *Model) GetEvents() []Event {
+	return m.events
+}
+
+// AddEvent ..
+func (m *Model) AddEvent(e Event) {
+	m.NewEvents = append(m.NewEvents, e)
 }
 
 // Update method
@@ -33,6 +51,28 @@ func (m *Model) Update(newState *State) {
 
 	_, diff := prevState.Compare(newState)
 	m.ChangedFields = diff
+
+	if len(diff) > 0 || len(m.NewEvents) > 0 {
+		for _, f := range m.onChange {
+			f(m)
+		}
+	}
+
+	m.updateEvents(defaultEventLimit)
+}
+
+// updateEvents method
+func (m *Model) updateEvents(limit int) {
+	if len(m.NewEvents) == 0 {
+		return
+	}
+	m.events = append(m.events, m.NewEvents...)
+	if len(m.events) > limit {
+		srcEvents := m.events
+		m.events = make([]Event, limit)
+		copy(m.events, srcEvents[0:limit])
+	}
+	m.NewEvents = []Event{}
 }
 
 // updateStatusCounts method
@@ -47,4 +87,11 @@ func (m *Model) updateStatusCounts() {
 			curr.UpsStatus.FlagChangeCounts[flagName]++
 		}
 	}
+}
+
+// Event ..
+type Event struct {
+	Ts   time.Time
+	Name string
+	Text string
 }

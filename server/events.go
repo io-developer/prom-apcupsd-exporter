@@ -1,6 +1,11 @@
 package server
 
-import "net/http"
+import (
+	"local/apcupsd_exporter/metric"
+	"local/apcupsd_exporter/model"
+	"net/http"
+	"time"
+)
 
 // metricsInit ..
 func eventsInit() {
@@ -75,4 +80,14 @@ func eventsHandle(event string, w http.ResponseWriter, r *http.Request) {
 		"event_type": event,
 	})
 	w.Write([]byte("ok"))
+
+	collector.GetModel().AddEvent(model.Event{
+		Ts:   time.Now(),
+		Name: event,
+		Text: "Text about " + event,
+	})
+
+	collector.Collect(metric.CollectOpts{
+		PreventFlood: false,
+	})
 }
