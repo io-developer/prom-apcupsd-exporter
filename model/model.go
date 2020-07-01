@@ -5,7 +5,7 @@ type Model struct {
 	State         *State
 	PrevState     *State
 	ChangedFields map[string][]interface{}
-	onChange      map[chan *Model]bool
+	onChange      []func(*Model)
 }
 
 // NewModel ..
@@ -14,13 +14,13 @@ func NewModel() *Model {
 		State:         NewState(),
 		PrevState:     NewState(),
 		ChangedFields: map[string][]interface{}{},
-		onChange:      map[chan *Model]bool{},
+		onChange:      []func(*Model){},
 	}
 }
 
 // AddOnChange ..
-func (m *Model) AddOnChange(ch chan *Model) {
-	m.onChange[ch] = true
+func (m *Model) AddOnChange(handler func(*Model)) {
+	m.onChange = append(m.onChange, handler)
 }
 
 // Update method
@@ -29,19 +29,16 @@ func (m *Model) Update(newState *State) {
 	m.PrevState = prevState
 	m.State = newState
 
-	updateStatusCounts(prevState, newState)
+	m.updateStatusCounts()
 
 	_, diff := prevState.Compare(newState)
 	m.ChangedFields = diff
-
-	if len(diff) > 0 {
-		for ch := range m.onChange {
-			ch <- m
-		}
-	}
 }
 
-func updateStatusCounts(old *State, curr *State) {
+// updateStatusCounts method
+func (m *Model) updateStatusCounts() {
+	old := m.PrevState
+	curr := m.State
 	curr.UpsStatus.FlagChangeCounts = old.UpsStatus.CloneFlagChangeCounts()
 	flags := curr.UpsStatus.GetFlags()
 	prevFlags := old.UpsStatus.GetFlags()

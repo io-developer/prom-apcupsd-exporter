@@ -34,9 +34,7 @@ var (
 func wsInit() {
 	go wsListenUnregister()
 
-	changeQueue := make(chan *model.Model)
-	collector.GetModel().AddOnChange(changeQueue)
-	go wsListenModelChange(changeQueue)
+	collector.GetModel().AddOnChange(wsOnModelChange)
 
 	http.HandleFunc("/ws", wsOnConnect)
 }
@@ -106,16 +104,6 @@ func wsBroadcast(msgType int, msgData []byte) {
 		client.sendQueue <- WsMsg{
 			msgType: msgType,
 			data:    msgData,
-		}
-	}
-}
-
-func wsListenModelChange(ch chan *model.Model) {
-	for {
-		if model, ok := <-ch; ok {
-			wsOnModelChange(model)
-		} else {
-			return
 		}
 	}
 }
