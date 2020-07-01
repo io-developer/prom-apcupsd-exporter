@@ -48,6 +48,7 @@ func (m *Model) Update(newState *State) {
 	m.State = newState
 
 	m.updateStatusCounts()
+	m.updateTransferOnbatt()
 
 	_, diff := prevState.Compare(newState)
 	m.ChangedFields = diff
@@ -85,6 +86,28 @@ func (m *Model) updateStatusCounts() {
 	for flagName := range StatusFlags {
 		if flags[flagName] != prevFlags[flagName] {
 			curr.UpsStatus.FlagChangeCounts[flagName]++
+		}
+	}
+}
+
+// updateTransferOnbatt method
+func (m *Model) updateTransferOnbatt() {
+	old := m.PrevState
+	curr := m.State
+
+	// Reveal hidden quick transfers on battery and back
+	transDelta := int64(curr.UpsTransferOnBatteryCount) - int64(old.UpsTransferOnBatteryCount)
+	if transDelta > 0 {
+		minIncr := uint64(transDelta-1) * 2
+		curr.UpsStatus.FlagChangeCounts["online"] += minIncr
+		curr.UpsStatus.FlagChangeCounts["onbatt"] += minIncr
+
+		flag := curr.UpsStatus.Flag
+		if flag&StatusFlags["online"] != 0 {
+			curr.UpsStatus.FlagChangeCounts["online"] += 2
+		}
+		if flag&StatusFlags["onbatt"] == 0 {
+			curr.UpsStatus.FlagChangeCounts["onbatt"] += 2
 		}
 	}
 }
