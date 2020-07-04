@@ -20,5 +20,5 @@ func Init(l log.Logger, c *metric.Collector) {
 
 	metricsInit()
 	wsInit()
-	eventsInit()
+	signalsInit()
 }
