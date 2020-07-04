@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-const defaultEventLimit = 20
+const defaultEventLimit = 30
 
 // Model data
 type Model struct {
@@ -49,6 +49,7 @@ func (m *Model) Update(newState *State) {
 
 	m.updateStatusCounts()
 	m.updateTransferOnbatt()
+	m.updateEvents()
 
 	_, diff := prevState.Compare(newState)
 	m.ChangedFields = diff
@@ -59,21 +60,7 @@ func (m *Model) Update(newState *State) {
 		}
 	}
 
-	m.updateEvents(defaultEventLimit)
-}
-
-// updateEvents method
-func (m *Model) updateEvents(limit int) {
-	if len(m.NewEvents) == 0 {
-		return
-	}
-	m.events = append(m.events, m.NewEvents...)
-	if len(m.events) > limit {
-		srcEvents := m.events
-		m.events = make([]Event, limit)
-		copy(m.events, srcEvents[0:limit])
-	}
-	m.NewEvents = []Event{}
+	m.trimEvents(defaultEventLimit)
 }
 
 // updateStatusCounts method
@@ -112,9 +99,128 @@ func (m *Model) updateTransferOnbatt() {
 	}
 }
 
+// updateEvents method
+func (m *Model) updateEvents() {
+	prev := m.PrevState
+	curr := m.State
+
+	prevFlag := prev.UpsStatus.Flag
+	currFlag := curr.UpsStatus.Flag
+
+	if (prevFlag&StatusFlags["commlost"]) == 0 && (currFlag&StatusFlags["commlost"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "commlost",
+		})
+		return
+	}
+	if (prevFlag&StatusFlags["commlost"]) != 0 && (currFlag&StatusFlags["commlost"]) == 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "commlost_end",
+		})
+		return
+	}
+
+	if (prevFlag&StatusFlags["onbatt"]) == 0 && (currFlag&StatusFlags["onbatt"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "onbatt",
+			Data: map[string]interface{}{
+				"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
+				"reason_type": curr.UpsTransferOnBatteryReason.Type,
+				"reason_text": curr.UpsTransferOnBatteryReason.Text,
+			},
+		})
+	} else if (prevFlag&StatusFlags["onbatt"]) != 0 && (currFlag&StatusFlags["onbatt"]) == 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "onbatt_end",
+			Data: map[string]interface{}{
+				"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
+				"ts_end":      curr.UpsTransferOffBatteryDate.Unix(),
+				"seconds":     prev.UpsOnBatterySeconds,
+				"reason_type": curr.UpsTransferOnBatteryReason.Type,
+				"reason_text": curr.UpsTransferOnBatteryReason.Text,
+			},
+		})
+	} else if (prevFlag&StatusFlags["online"]) != 0 && (currFlag&StatusFlags["online"]) == 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "offline",
+		})
+	} else if (prevFlag&StatusFlags["online"]) == 0 && (currFlag&StatusFlags["online"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "online",
+		})
+	}
+
+	onlineOkMask := StatusFlags["online"] | StatusFlags["trim"] | StatusFlags["boost"]
+	onlineOkExpect := StatusFlags["online"]
+
+	wasOnlineOk := (prevFlag & onlineOkMask) == onlineOkExpect
+	isOnlineOk := (currFlag & onlineOkMask) == onlineOkExpect
+
+	if !wasOnlineOk && isOnlineOk {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "line_ok",
+		})
+	}
+	if (prevFlag&StatusFlags["trim"]) == 0 && (currFlag&StatusFlags["trim"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "trim",
+		})
+	}
+	if (prevFlag&StatusFlags["boost"]) == 0 && (currFlag&StatusFlags["boost"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "boost",
+		})
+	}
+
+	if (prevFlag&StatusFlags["overload"]) == 0 && (currFlag&StatusFlags["overload"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "overload",
+		})
+	} else if (prevFlag&StatusFlags["overload"]) != 0 && (currFlag&StatusFlags["overload"]) == 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "overload_end",
+		})
+	}
+
+	if (prevFlag&StatusFlags["battpresent"]) != 0 && (currFlag&StatusFlags["battpresent"]) == 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "nobatt",
+		})
+	} else if (prevFlag&StatusFlags["battpresent"]) == 0 && (currFlag&StatusFlags["battpresent"]) != 0 {
+		m.AddEvent(Event{
+			Ts:   time.Now(),
+			Type: "nobatt_end",
+		})
+	}
+}
+
+// trimEvents method
+func (m *Model) trimEvents(limit int) {
+	if len(m.NewEvents) == 0 {
+		return
+	}
+	m.events = append(m.events, m.NewEvents...)
+	if len(m.events) > limit {
+		copy(m.events, m.events[len(m.events)-limit:])
+	}
+	m.NewEvents = []Event{}
+}
+
 // Event ..
 type Event struct {
 	Ts   time.Time
-	Name string
-	Text string
+	Type string
+	Data map[string]interface{}
 }
