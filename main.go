@@ -29,6 +29,7 @@ type cliArgs struct {
 	apcupsdAddr         string
 	apcaccessPath       string
 	apcaccessFloodLimit time.Duration
+	apcupsdStartSkip    time.Duration
 	collectInterval     time.Duration
 	defaultState        *model.State
 }
@@ -39,6 +40,7 @@ func parseArgs() cliArgs {
 	apcupsd := flag.String("apcupsd", "127.0.0.1:3551", "apcupsd host:port")
 	apcaccess := flag.String("apcaccess", "/sbin/apcaccess", "apcaccess path")
 	floodlimit := flag.Float64("floodlimit", 0.5, "Min time delta between apcaccess calls in seconds")
+	apcupsdStartSkip := flag.Float64("apcupsdStartSkip", 15, "Ignore first N sec agetr apcupsd start")
 	collectinterval := flag.Float64("collectinterval", 10, "Base Collect loop interval in seconds")
 	defStateJSON := flag.String("default_model_state", "",
 		"JSON of default values of model state.\n"+
@@ -53,6 +55,7 @@ func parseArgs() cliArgs {
 		apcupsdAddr:         *apcupsd,
 		apcaccessPath:       *apcaccess,
 		apcaccessFloodLimit: time.Duration(*floodlimit * float64(time.Second)),
+		apcupsdStartSkip:    time.Duration(*apcupsdStartSkip * float64(time.Second)),
 		collectInterval:     time.Duration(*collectinterval * float64(time.Second)),
 	}
 
@@ -78,6 +81,7 @@ func main() {
 		ApcupsdAddr:         args.apcupsdAddr,
 		ApcaccessPath:       args.apcaccessPath,
 		ApcaccessFloodLimit: args.apcaccessFloodLimit,
+		ApcupsdStartSkip:    args.apcupsdStartSkip,
 		CollectInterval:     args.collectInterval,
 		DefaultState:        args.defaultState,
 	})

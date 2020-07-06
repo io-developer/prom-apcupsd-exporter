@@ -72,8 +72,9 @@ type State struct {
 	ShutdownOnBatterySecondsMax int64
 
 	// apcupsd
-	ApcupsdHost    string
-	ApcupsdVersion string
+	ApcupsdHost      string
+	ApcupsdVersion   string
+	ApcupsdStartTime time.Time
 }
 
 // NewState cotructor

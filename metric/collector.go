@@ -19,6 +19,7 @@ type CollectorOtps struct {
 	ApcaccessPath       string
 	ApcaccessFloodLimit time.Duration
 	CollectInterval     time.Duration
+	ApcupsdStartSkip    time.Duration
 	Factory             *Factory
 	DefaultState        *model.State
 }
@@ -138,7 +139,23 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 func (c *Collector) updateModel(opts CollectOpts) {
 	level.Debug(Logger).Log("msg", "collect: updating model")
 
-	c.currModel.Update(model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState))
+	state := model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
+
+	dt := time.Now().Sub(state.ApcupsdStartTime)
+	level.Warn(Logger).Log(
+		"msg", "dt",
+		"dt", dt,
+		"ApcupsdStartSkip", c.opts.ApcupsdStartSkip,
+	)
+	if dt < c.opts.ApcupsdStartSkip {
+		level.Warn(Logger).Log(
+			"msg", "skipping state update due to start delay",
+			"dt", dt,
+		)
+		return
+	}
+
+	c.currModel.Update(state)
 
 	for field, diff := range c.currModel.ChangedFields {
 		level.Info(Logger).Log(

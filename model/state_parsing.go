@@ -118,7 +118,8 @@ func NewStateFromOutput(o *apcupsd.Output, def *State) *State {
 		ShutdownOnBatterySecondsMax: o.GetSeconds("MAXTIME", def.ShutdownOnBatterySecondsMax),
 
 		// apcupsd
-		ApcupsdHost:    o.Get("HOSTNAME", def.ApcupsdHost),
-		ApcupsdVersion: o.Get("VERSION", def.ApcupsdVersion),
+		ApcupsdHost:      o.Get("HOSTNAME", def.ApcupsdHost),
+		ApcupsdVersion:   o.Get("VERSION", def.ApcupsdVersion),
+		ApcupsdStartTime: o.GetTime("STARTTIME", def.ApcupsdStartTime),
 	}
 }
