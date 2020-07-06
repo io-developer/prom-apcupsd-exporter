@@ -52,7 +52,7 @@ func wsOnConnect(w http.ResponseWriter, r *http.Request) {
 	client := NewWsClient(conn, wsUnregisterQueue)
 	wsClients[client] = true
 
-	wsSendInit(client)
+	client.sendMsgInit()
 }
 
 func wsListenUnregister() {
@@ -67,24 +67,6 @@ func wsListenUnregister() {
 		} else {
 			level.Warn(logger).Log("msg", "unregister faile: client not registered")
 		}
-	}
-}
-
-func wsSendInit(client *WsClient) {
-	payload := map[string]interface{}{
-		"type":         "init",
-		"message":      "Init complete. Listening UPS events..",
-		"model_state":  collector.GetModel().State,
-		"model_events": collector.GetModel().GetEvents(),
-	}
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		level.Error(logger).Log("msg", "init payload jsonErr", "err", err)
-		return
-	}
-	client.sendQueue <- WsMsg{
-		msgType: websocket.TextMessage,
-		data:    payloadJSON,
 	}
 }
 
@@ -224,6 +206,14 @@ func (c *WsClient) listenSend() {
 	}
 }
 
+func (c *WsClient) onReadMsg(msg WsMsg) {
+	level.Debug(logger).Log("msg", "onReadMsg", "type", msg.msgType, "text", string(msg.data))
+
+	if string(msg.data) == "init" {
+		c.sendMsgInit()
+	}
+}
+
 func (c *WsClient) sendMsg(msg WsMsg) {
 	level.Debug(logger).Log("msg", "sending msg to client")
 
@@ -234,6 +224,20 @@ func (c *WsClient) sendMsg(msg WsMsg) {
 	}
 }
 
-func (c *WsClient) onReadMsg(msg WsMsg) {
-	level.Debug(logger).Log("msg", "onReadMsg", "type", msg.msgType, "text", string(msg.data))
+func (c *WsClient) sendMsgInit() {
+	payload := map[string]interface{}{
+		"type":         "init",
+		"message":      "Init complete. Listening UPS events..",
+		"model_state":  collector.GetModel().State,
+		"model_events": collector.GetModel().GetEvents(),
+	}
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		level.Error(logger).Log("msg", "init payload jsonErr", "err", err)
+		return
+	}
+	c.sendQueue <- WsMsg{
+		msgType: websocket.TextMessage,
+		data:    payloadJSON,
+	}
 }
