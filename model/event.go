@@ -27,6 +27,8 @@ const (
 	EventTypeOverloadEnd = EventType("overload_end")
 	EventTypeNobatt      = EventType("nobatt")
 	EventTypeNobattEnd   = EventType("nobatt_end")
+	EventTypeTurnedOn    = EventType("turned_on")
+	EventTypeTurnedOff   = EventType("turned_off")
 )
 
 func eventsFromStateChanges(prev State, curr State) []Event {
@@ -128,6 +130,26 @@ func eventsFromStateChanges(prev State, curr State) []Event {
 		events = append(events, Event{
 			Ts:   time.Now(),
 			Type: EventTypeNobattEnd,
+		})
+	}
+
+	wasTurnedOff := (prevFlag&StatusFlags["plugged"] != 0) &&
+		(prevFlag&StatusFlags["online"]) == 0 &&
+		(prevFlag&StatusFlags["onbatt"]) == 0
+
+	isTurnedOff := (currFlag&StatusFlags["plugged"] != 0) &&
+		(currFlag&StatusFlags["online"]) == 0 &&
+		(currFlag&StatusFlags["onbatt"]) == 0
+
+	if wasTurnedOff && !isTurnedOff {
+		events = append(events, Event{
+			Ts:   time.Now(),
+			Type: EventTypeTurnedOn,
+		})
+	} else if !wasTurnedOff && isTurnedOff {
+		events = append(events, Event{
+			Ts:   time.Now(),
+			Type: EventTypeTurnedOff,
 		})
 	}
 
