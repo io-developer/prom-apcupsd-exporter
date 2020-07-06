@@ -32,106 +32,53 @@ const (
 )
 
 func eventsFromStateChanges(prev State, curr State) []Event {
-	prevFlag := prev.UpsStatus.Flag
-	currFlag := curr.UpsStatus.Flag
-
-	if (prevFlag&StatusFlags["commlost"]) == 0 && (currFlag&StatusFlags["commlost"]) != 0 {
-		return []Event{{
-			Ts:   time.Now(),
-			Type: EventTypeCommlost,
-		}}
-	}
-	if (prevFlag&StatusFlags["commlost"]) != 0 && (currFlag&StatusFlags["commlost"]) == 0 {
-		return []Event{{
-			Ts:   time.Now(),
-			Type: EventTypeCommlostEnd,
-		}}
-	}
+	m := eventsCalcMap(prev, curr)
+	m = eventsReduceMap(m)
 
 	events := []Event{}
-
-	if (prevFlag&StatusFlags["onbatt"]) == 0 && (currFlag&StatusFlags["onbatt"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOnbatt,
-			Data: map[string]interface{}{
-				"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
-				"reason_type": curr.UpsTransferOnBatteryReason.Type,
-				"reason_text": curr.UpsTransferOnBatteryReason.Text,
-			},
-		})
-	} else if (prevFlag&StatusFlags["onbatt"]) != 0 && (currFlag&StatusFlags["onbatt"]) == 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOnbattEnd,
-			Data: map[string]interface{}{
-				"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
-				"ts_end":      curr.UpsTransferOffBatteryDate.Unix(),
-				"seconds":     prev.UpsOnBatterySeconds,
-				"reason_type": curr.UpsTransferOnBatteryReason.Type,
-				"reason_text": curr.UpsTransferOnBatteryReason.Text,
-			},
-		})
-	} else if (prevFlag&StatusFlags["online"]) != 0 && (currFlag&StatusFlags["online"]) == 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOffline,
-		})
-	} else if (prevFlag&StatusFlags["online"]) == 0 && (currFlag&StatusFlags["online"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOnline,
-		})
+	for eventType, enabled := range m {
+		if enabled {
+			events = append(events, eventFromType(eventType, prev, curr))
+		}
 	}
+
+	return events
+}
+
+func eventFromType(t EventType, prev State, curr State) Event {
+	event := Event{
+		Ts:   time.Now(),
+		Type: t,
+	}
+
+	if t == EventTypeOnbatt {
+		event.Data = map[string]interface{}{
+			"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
+			"reason_type": curr.UpsTransferOnBatteryReason.Type,
+			"reason_text": curr.UpsTransferOnBatteryReason.Text,
+		}
+	} else if t == EventTypeOnbattEnd {
+		event.Data = map[string]interface{}{
+			"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
+			"ts_end":      curr.UpsTransferOffBatteryDate.Unix(),
+			"seconds":     prev.UpsOnBatterySeconds,
+			"reason_type": curr.UpsTransferOnBatteryReason.Type,
+			"reason_text": curr.UpsTransferOnBatteryReason.Text,
+		}
+	}
+
+	return event
+}
+
+func eventsCalcMap(prev State, curr State) map[EventType]bool {
+	prevFlag := prev.UpsStatus.Flag
+	currFlag := curr.UpsStatus.Flag
 
 	onlineOkMask := StatusFlags["online"] | StatusFlags["trim"] | StatusFlags["boost"]
 	onlineOkExpect := StatusFlags["online"]
 
 	wasOnlineOk := (prevFlag & onlineOkMask) == onlineOkExpect
 	isOnlineOk := (currFlag & onlineOkMask) == onlineOkExpect
-
-	if !wasOnlineOk && isOnlineOk {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeLineOk,
-		})
-	}
-	if (prevFlag&StatusFlags["trim"]) == 0 && (currFlag&StatusFlags["trim"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeTrim,
-		})
-	}
-	if (prevFlag&StatusFlags["boost"]) == 0 && (currFlag&StatusFlags["boost"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeBoost,
-		})
-	}
-
-	if (prevFlag&StatusFlags["overload"]) == 0 && (currFlag&StatusFlags["overload"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOverload,
-		})
-	} else if (prevFlag&StatusFlags["overload"]) != 0 && (currFlag&StatusFlags["overload"]) == 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeOverloadEnd,
-		})
-	}
-
-	if (prevFlag&StatusFlags["battpresent"]) != 0 && (currFlag&StatusFlags["battpresent"]) == 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeNobatt,
-		})
-	} else if (prevFlag&StatusFlags["battpresent"]) == 0 && (currFlag&StatusFlags["battpresent"]) != 0 {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeNobattEnd,
-		})
-	}
 
 	wasTurnedOff := (prevFlag&StatusFlags["plugged"] != 0) &&
 		(prevFlag&StatusFlags["online"]) == 0 &&
@@ -141,17 +88,84 @@ func eventsFromStateChanges(prev State, curr State) []Event {
 		(currFlag&StatusFlags["online"]) == 0 &&
 		(currFlag&StatusFlags["onbatt"]) == 0
 
-	if wasTurnedOff && !isTurnedOff {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeTurnedOn,
-		})
-	} else if !wasTurnedOff && isTurnedOff {
-		events = append(events, Event{
-			Ts:   time.Now(),
-			Type: EventTypeTurnedOff,
-		})
+	m := map[EventType]bool{
+		EventTypeLineOk:    !wasOnlineOk && isOnlineOk,
+		EventTypeTurnedOn:  wasTurnedOff && !isTurnedOff,
+		EventTypeTurnedOff: !wasTurnedOff && isTurnedOff,
+
+		EventTypeCommlost: (prevFlag&StatusFlags["commlost"]) == 0 &&
+			(currFlag&StatusFlags["commlost"]) != 0,
+
+		EventTypeCommlostEnd: (prevFlag&StatusFlags["commlost"]) != 0 &&
+			(currFlag&StatusFlags["commlost"]) == 0,
+
+		EventTypeOnbatt: (prevFlag&StatusFlags["onbatt"]) == 0 &&
+			(currFlag&StatusFlags["onbatt"]) != 0,
+
+		EventTypeOnbattEnd: (prevFlag&StatusFlags["onbatt"]) != 0 &&
+			(currFlag&StatusFlags["onbatt"]) == 0,
+
+		EventTypeOffline: (prevFlag&StatusFlags["online"]) != 0 &&
+			(currFlag&StatusFlags["online"]) == 0,
+
+		EventTypeOnline: (prevFlag&StatusFlags["online"]) == 0 &&
+			(currFlag&StatusFlags["online"]) != 0,
+
+		EventTypeTrim: (prevFlag&StatusFlags["trim"]) == 0 &&
+			(currFlag&StatusFlags["trim"]) != 0,
+
+		EventTypeBoost: (prevFlag&StatusFlags["boost"]) == 0 &&
+			(currFlag&StatusFlags["boost"]) != 0,
+
+		EventTypeOverload: (prevFlag&StatusFlags["overload"]) == 0 &&
+			(currFlag&StatusFlags["overload"]) != 0,
+
+		EventTypeOverloadEnd: (prevFlag&StatusFlags["overload"]) != 0 &&
+			(currFlag&StatusFlags["overload"]) == 0,
+
+		EventTypeNobatt: (prevFlag&StatusFlags["battpresent"]) != 0 &&
+			(currFlag&StatusFlags["battpresent"]) == 0,
+
+		EventTypeNobattEnd: (prevFlag&StatusFlags["battpresent"]) == 0 &&
+			(currFlag&StatusFlags["battpresent"]) != 0,
 	}
 
-	return events
+	return m
+}
+
+// disable unecessary events
+func eventsReduceMap(m map[EventType]bool) map[EventType]bool {
+
+	if m[EventTypeTurnedOn] {
+		m[EventTypeLineOk] = false
+		m[EventTypeOnline] = false
+		m[EventTypeOverloadEnd] = false
+		m[EventTypeNobattEnd] = false
+		m[EventTypeCommlostEnd] = false
+	}
+
+	if m[EventTypeTurnedOff] {
+		m[EventTypeNobatt] = false
+		m[EventTypeOffline] = false
+		m[EventTypeCommlostEnd] = false
+		m[EventTypeOverloadEnd] = false
+	}
+
+	if m[EventTypeLineOk] {
+		m[EventTypeOnline] = false
+		m[EventTypeCommlostEnd] = false
+		m[EventTypeNobattEnd] = false
+	}
+
+	if m[EventTypeOnline] {
+		m[EventTypeCommlostEnd] = false
+		m[EventTypeNobattEnd] = false
+	}
+
+	if m[EventTypeOnbattEnd] {
+		m[EventTypeOnline] = false
+		m[EventTypeLineOk] = false
+	}
+
+	return m
 }
