@@ -139,14 +139,9 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 func (c *Collector) updateModel(opts CollectOpts) {
 	level.Debug(Logger).Log("msg", "collect: updating model")
 
-	state := model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
+	state := c.parseState()
 
 	dt := time.Now().Sub(state.ApcupsdStartTime)
-	level.Warn(Logger).Log(
-		"msg", "dt",
-		"dt", dt,
-		"ApcupsdStartSkip", c.opts.ApcupsdStartSkip,
-	)
 	if dt < c.opts.ApcupsdStartSkip {
 		level.Warn(Logger).Log(
 			"msg", "skipping state update due to start delay",
@@ -164,6 +159,20 @@ func (c *Collector) updateModel(opts CollectOpts) {
 			"new", fmt.Sprintf("%#v", diff[1]),
 		)
 	}
+}
+
+func (c *Collector) parseState() *model.State {
+	prev := c.currModel.PrevState
+	state := model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
+
+	if state.UpsTransferOffBatteryDate.Sub(prev.UpsTransferOffBatteryDate) < 0 {
+		state.UpsTransferOffBatteryDate = prev.UpsTransferOffBatteryDate
+	}
+	if state.UpsTransferOnBatteryDate.Sub(prev.UpsTransferOnBatteryDate) < 0 {
+		state.UpsTransferOnBatteryDate = prev.UpsTransferOnBatteryDate
+	}
+
+	return state
 }
 
 func (c *Collector) updateMetrics(opts CollectOpts) {
