@@ -35,14 +35,14 @@ type cliArgs struct {
 }
 
 func parseArgs() cliArgs {
-	loglevel := flag.String("loglevel", "info", "Options: debug, info, warn, error")
+	logLevel := flag.String("logLevel", "info", "Options: debug, info, warn, error")
 	listen := flag.String("listen", "0.0.0.0:8001", "ip:port")
 	apcupsd := flag.String("apcupsd", "127.0.0.1:3551", "apcupsd host:port")
 	apcaccess := flag.String("apcaccess", "/sbin/apcaccess", "apcaccess path")
-	floodlimit := flag.Float64("floodlimit", 0.5, "Min time delta between apcaccess calls in seconds")
+	floodLimit := flag.Float64("floodLimit", 0.5, "Min time delta between apcaccess calls in seconds")
 	apcupsdStartSkip := flag.Float64("apcupsdStartSkip", 15, "Ignore first N sec agetr apcupsd start")
-	collectinterval := flag.Float64("collectinterval", 10, "Base Collect loop interval in seconds")
-	defStateJSON := flag.String("default_model_state", "",
+	collectInterval := flag.Float64("collectInterval", 10, "Base Collect loop interval in seconds")
+	defStateJSON := flag.String("defaultModelState", "",
 		"JSON of default values of model state.\n"+
 			"For example: '{\"OutputPowerNominal\": 100500}' returns metric "+
 			"'apcupsd_output_power_nominal 100500' if no value was parsed in apcaccess output",
@@ -50,13 +50,13 @@ func parseArgs() cliArgs {
 	flag.Parse()
 
 	args := cliArgs{
-		logLevel:            *loglevel,
+		logLevel:            *logLevel,
 		listenAddr:          *listen,
 		apcupsdAddr:         *apcupsd,
 		apcaccessPath:       *apcaccess,
-		apcaccessFloodLimit: time.Duration(*floodlimit * float64(time.Second)),
+		apcaccessFloodLimit: time.Duration(*floodLimit * float64(time.Second)),
 		apcupsdStartSkip:    time.Duration(*apcupsdStartSkip * float64(time.Second)),
-		collectInterval:     time.Duration(*collectinterval * float64(time.Second)),
+		collectInterval:     time.Duration(*collectInterval * float64(time.Second)),
 	}
 
 	if *defStateJSON != "" {
