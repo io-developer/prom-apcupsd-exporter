@@ -49,7 +49,11 @@ func signalsHandle(signal model.Signal, w http.ResponseWriter, r *http.Request) 
 	w.Write([]byte("ok"))
 
 	collector.Collect(metric.CollectOpts{
+		SkipApcupsdParsing: true,
+		Signal:             signal,
+	})
+
+	collector.Collect(metric.CollectOpts{
 		PreventFlood: false,
-		Signal:       signal,
 	})
 }

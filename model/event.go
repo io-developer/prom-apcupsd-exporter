@@ -14,6 +14,7 @@ type EventType string
 
 // Event types
 const (
+	EventTypeSignal      = EventType("signal")
 	EventTypeCommlost    = EventType("commlost")
 	EventTypeCommlostEnd = EventType("commlost_end")
 	EventTypeOnbatt      = EventType("onbatt")

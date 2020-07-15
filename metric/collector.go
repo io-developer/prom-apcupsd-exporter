@@ -32,6 +32,7 @@ type Collector struct {
 	currModel    *model.Model
 	lastOutput   *apcupsd.Output
 	lastOutputTs int64
+	lastState    model.State
 	metrics      []*Metric
 }
 
@@ -113,6 +114,10 @@ func (c *Collector) collect(opts CollectOpts) {
 }
 
 func (c *Collector) updateOutput(opts CollectOpts) {
+	if opts.SkipApcupsdParsing {
+		level.Debug(Logger).Log("msg", "collect: skipping apcupsd output parsing")
+		return
+	}
 	level.Debug(Logger).Log("msg", "collect: pending apcupsd output")
 
 	ts := time.Now().UnixNano()
@@ -134,14 +139,14 @@ func (c *Collector) updateOutput(opts CollectOpts) {
 
 	c.lastOutput = apcupsd.NewOutput(string(cmdResult))
 	c.lastOutput.Parse()
+
+	c.lastState = c.parseState()
 }
 
 func (c *Collector) updateModel(opts CollectOpts) {
 	level.Debug(Logger).Log("msg", "collect: updating model")
 
-	state := c.parseState()
-
-	dt := time.Now().Sub(state.ApcupsdStartTime)
+	dt := time.Now().Sub(c.lastState.ApcupsdStartTime)
 	if dt < c.opts.ApcupsdStartSkip {
 		level.Warn(Logger).Log(
 			"msg", "skipping state update due to start delay",
@@ -150,7 +155,18 @@ func (c *Collector) updateModel(opts CollectOpts) {
 		return
 	}
 
-	c.currModel.Update(state)
+	if opts.Signal != model.Signal("") {
+		ev := model.Event{
+			Ts:   time.Now(),
+			Type: model.EventTypeSignal,
+			Data: map[string]interface{}{
+				"signal": opts.Signal,
+			},
+		}
+		c.currModel.AddEvent(ev)
+	}
+
+	c.currModel.Update(c.lastState)
 
 	for field, diff := range c.currModel.ChangedFields {
 		level.Info(Logger).Log(
@@ -201,7 +217,8 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 
 // CollectOpts ..
 type CollectOpts struct {
-	PreventFlood bool
-	Signal       model.Signal
-	OnComplete   chan bool
+	PreventFlood       bool
+	SkipApcupsdParsing bool
+	Signal             model.Signal
+	OnComplete         chan bool
 }
