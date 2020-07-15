@@ -202,5 +202,6 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 // CollectOpts ..
 type CollectOpts struct {
 	PreventFlood bool
+	Signal       model.Signal
 	OnComplete   chan bool
 }
