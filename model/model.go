@@ -4,8 +4,8 @@ const defaultEventLimit = 30
 
 // Model data
 type Model struct {
-	State         *State
-	PrevState     *State
+	State         State
+	PrevState     State
 	events        []Event
 	NewEvents     []Event
 	EventLimit    int
@@ -42,7 +42,7 @@ func (m *Model) AddEvent(e Event) {
 }
 
 // Update method
-func (m *Model) Update(newState *State) {
+func (m *Model) Update(newState State) {
 	prevState := m.State
 	m.PrevState = prevState
 	m.State = newState
@@ -101,7 +101,7 @@ func (m *Model) updateTransferOnbatt() {
 
 // updateEvents method
 func (m *Model) updateEvents() {
-	events := eventsFromStateChanges(*m.PrevState, *m.State)
+	events := eventsFromStateChanges(m.PrevState, m.State)
 	m.NewEvents = append(m.NewEvents, events...)
 }
 

@@ -78,8 +78,8 @@ type State struct {
 }
 
 // NewState cotructor
-func NewState() *State {
-	return &State{
+func NewState() State {
+	return State{
 		InputSensivity:             Sensivity{},
 		BatteryReplacedDate:        time.Time{},
 		UpsManafacturedDate:        time.Time{},
@@ -96,11 +96,11 @@ func NewState() *State {
 }
 
 // Compare method
-func (s *State) Compare(b *State) (equal bool, diff map[string][]interface{}) {
+func (s State) Compare(b State) (equal bool, diff map[string][]interface{}) {
 	diff = map[string][]interface{}{}
-	typeElem := reflect.TypeOf(s).Elem()
-	elemA := reflect.ValueOf(s).Elem()
-	elemB := reflect.ValueOf(b).Elem()
+	typeElem := reflect.TypeOf(&s).Elem()
+	elemA := reflect.ValueOf(&s).Elem()
+	elemB := reflect.ValueOf(&b).Elem()
 	for i := 0; i < typeElem.NumField(); i++ {
 		equal := false
 		field := typeElem.Field(i)
@@ -119,7 +119,7 @@ func (s *State) Compare(b *State) (equal bool, diff map[string][]interface{}) {
 }
 
 // GetLastUpsOnBatteryDuration - last or current (if on battery)
-func (s *State) GetLastUpsOnBatteryDuration() time.Duration {
+func (s State) GetLastUpsOnBatteryDuration() time.Duration {
 	ondate := s.UpsTransferOnBatteryDate
 	offdate := s.UpsTransferOffBatteryDate
 	if offdate.Sub(ondate) < 0 {

@@ -161,7 +161,7 @@ func (c *Collector) updateModel(opts CollectOpts) {
 	}
 }
 
-func (c *Collector) parseState() *model.State {
+func (c *Collector) parseState() model.State {
 	prev := c.currModel.PrevState
 	state := model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
 

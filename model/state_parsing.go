@@ -7,11 +7,11 @@ import (
 var defaultState = &State{}
 
 // NewStateFromOutput ..
-func NewStateFromOutput(o *apcupsd.Output, def *State) *State {
+func NewStateFromOutput(o *apcupsd.Output, def *State) State {
 	if def == nil {
 		def = defaultState
 	}
-	return &State{
+	return State{
 		// input
 		InputSensivity: Sensivity{
 			Text: o.Get("SENSE", def.InputSensivity.Text),
