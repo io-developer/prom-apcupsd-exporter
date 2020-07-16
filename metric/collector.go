@@ -155,17 +155,6 @@ func (c *Collector) updateModel(opts CollectOpts) {
 		return
 	}
 
-	if opts.Signal != model.Signal("") {
-		ev := model.Event{
-			Ts:   time.Now(),
-			Type: model.EventTypeSignal,
-			Data: map[string]interface{}{
-				"signal": opts.Signal,
-			},
-		}
-		c.currModel.AddEvent(ev)
-	}
-
 	c.currModel.Update(c.lastState)
 
 	for field, diff := range c.currModel.ChangedFields {
