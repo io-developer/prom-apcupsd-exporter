@@ -4,6 +4,7 @@ import (
 	"local/apcupsd_exporter/metric"
 	"local/apcupsd_exporter/model"
 	"net/http"
+	"time"
 
 	"github.com/go-kit/kit/log/level"
 )
@@ -48,12 +49,16 @@ func signalsHandle(signal model.Signal, w http.ResponseWriter, r *http.Request) 
 	})
 	w.Write([]byte("ok"))
 
-	collector.Collect(metric.CollectOpts{
-		SkipApcupsdParsing: true,
-		Signal:             signal,
+	collector.GetModel().AddEvent(model.Event{
+		Ts:   time.Now(),
+		Type: model.EventTypeSignal,
+		Data: map[string]interface{}{
+			"signal": signal,
+		},
 	})
 
 	collector.Collect(metric.CollectOpts{
 		PreventFlood: false,
+		Signal:       signal,
 	})
 }
