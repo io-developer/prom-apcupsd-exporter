@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 // Event ..
 type Event struct {
@@ -53,12 +55,18 @@ func eventFromType(t EventType, prev State, curr State) Event {
 	}
 
 	if t == EventTypeOnbatt {
+		if curr.UpsTransferOnBatteryDate.Year() > 1980 {
+			event.Ts = curr.UpsTransferOnBatteryDate
+		}
 		event.Data = map[string]interface{}{
 			"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
 			"reason_type": curr.UpsTransferOnBatteryReason.Type,
 			"reason_text": curr.UpsTransferOnBatteryReason.Text,
 		}
 	} else if t == EventTypeOnbattEnd {
+		if curr.UpsTransferOffBatteryDate.Year() > 1980 {
+			event.Ts = curr.UpsTransferOffBatteryDate
+		}
 		event.Data = map[string]interface{}{
 			"ts_start":    curr.UpsTransferOnBatteryDate.Unix(),
 			"ts_end":      curr.UpsTransferOffBatteryDate.Unix(),

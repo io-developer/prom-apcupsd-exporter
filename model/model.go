@@ -95,6 +95,9 @@ func (m *Model) updateTransferOnbatt() {
 		}
 		if flag&StatusFlags["onbatt"] == 0 {
 			curr.UpsStatus.FlagChangeCounts["onbatt"] += 2
+
+			m.AddEvent(eventFromType(EventTypeOnbatt, old, curr))
+			m.AddEvent(eventFromType(EventTypeOnbattEnd, old, curr))
 		}
 	}
 }
