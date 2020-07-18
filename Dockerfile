@@ -13,9 +13,9 @@ RUN \
   && apt-get install -y --no-install-recommends net-tools iputils-ping curl apcupsd \
   && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ADD bin/apcupsd_exporter /apcupsd_exporter
-RUN chmod +x /apcupsd_exporter
+ADD bin/prom-apcupsd-exporter /prom-apcupsd-exporter
+RUN chmod +x /prom-apcupsd-exporter
 
 EXPOSE 8001
 
-ENTRYPOINT ["/apcupsd_exporter"]
+ENTRYPOINT ["/prom-apcupsd-exporter"]
