@@ -43,15 +43,14 @@ func (m *Model) AddEvent(e Event) {
 
 // Update method
 func (m *Model) Update(newState State) {
-	prevState := m.State
-	m.PrevState = prevState
+	m.PrevState = m.State
 	m.State = newState
 
 	m.updateStatusCounts()
 	m.updateTransferOnbatt()
 	m.updateEvents()
 
-	_, diff := prevState.Compare(newState)
+	_, diff := m.PrevState.Compare(newState)
 	m.ChangedFields = diff
 
 	if len(diff) > 0 || len(m.NewEvents) > 0 {
@@ -65,39 +64,39 @@ func (m *Model) Update(newState State) {
 
 // updateStatusCounts method
 func (m *Model) updateStatusCounts() {
-	old := m.PrevState
-	curr := m.State
-	curr.UpsStatus.FlagChangeCounts = old.UpsStatus.CloneFlagChangeCounts()
-	flags := curr.UpsStatus.GetFlags()
-	prevFlags := old.UpsStatus.GetFlags()
-	for flagName := range StatusFlags {
-		if flags[flagName] != prevFlags[flagName] {
-			curr.UpsStatus.FlagChangeCounts[flagName]++
+	m.State.UpsStatus.FlagChangeCounts = m.PrevState.UpsStatus.CloneFlagChangeCounts()
+
+	if m.State.UpsStatus.Flag != m.PrevState.UpsStatus.Flag {
+		flags := m.State.UpsStatus.GetFlags()
+		prevFlags := m.PrevState.UpsStatus.GetFlags()
+		for flagName := range StatusFlags {
+			if flags[flagName] != prevFlags[flagName] {
+				m.State.UpsStatus.FlagChangeCounts[flagName]++
+			}
 		}
 	}
 }
 
 // updateTransferOnbatt method
 func (m *Model) updateTransferOnbatt() {
-	old := m.PrevState
-	curr := m.State
-
 	// Reveal hidden quick transfers on battery and back
-	transDelta := int64(curr.UpsTransferOnBatteryCount) - int64(old.UpsTransferOnBatteryCount)
+	transDelta := int64(m.State.UpsTransferOnBatteryCount) -
+		int64(m.PrevState.UpsTransferOnBatteryCount)
+
 	if transDelta > 0 {
 		minIncr := uint64(transDelta-1) * 2
-		curr.UpsStatus.FlagChangeCounts["online"] += minIncr
-		curr.UpsStatus.FlagChangeCounts["onbatt"] += minIncr
+		m.State.UpsStatus.FlagChangeCounts["online"] += minIncr
+		m.State.UpsStatus.FlagChangeCounts["onbatt"] += minIncr
 
-		flag := curr.UpsStatus.Flag
+		flag := m.State.UpsStatus.Flag
 		if flag&StatusFlags["online"] != 0 {
-			curr.UpsStatus.FlagChangeCounts["online"] += 2
+			m.State.UpsStatus.FlagChangeCounts["online"] += 2
 		}
 		if flag&StatusFlags["onbatt"] == 0 {
-			curr.UpsStatus.FlagChangeCounts["onbatt"] += 2
+			m.State.UpsStatus.FlagChangeCounts["onbatt"] += 2
 
-			m.AddEvent(eventFromType(EventTypeOnbatt, old, curr))
-			m.AddEvent(eventFromType(EventTypeOnbattEnd, old, curr))
+			m.AddEvent(eventFromType(EventTypeOnbatt, m.PrevState, m.State))
+			m.AddEvent(eventFromType(EventTypeOnbattEnd, m.PrevState, m.State))
 		}
 	}
 }
