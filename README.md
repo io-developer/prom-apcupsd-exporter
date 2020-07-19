@@ -1,5 +1,13 @@
 # Prometheus apcupsd exporter
 
+[![Docker Automated build](https://img.shields.io/docker/automated/iodeveloper/prom-apcupsd-exporter.svg)](https://hub.docker.com/repository/docker/iodeveloper/prom-apcupsd-exporter/)
+
+[![Docker Hub repository](http://dockeri.co/image/iodeveloper/prom-apcupsd-exporter)](https://registry.hub.docker.com/r/iodeveloper/prom-apcupsd-exporter)
+
+`iodeveloper/prom-apcupsd-exporter:latest`
+
+## Use cases
+
 * Provides wide apcupsd metrics for prometheus.
   * `apcupsd_input_*`: input line metrics
   * `apcupsd_output_*`: output line metrics
@@ -14,14 +22,16 @@ Example: lightweight status widget on pure js/css (responsive alternative to gra
 
 * This exporter calculates events between previous and latest states. Changed fields and new events are broadcasting to connected clients via websocket.
 
-[![Docker Automated build](https://img.shields.io/docker/automated/iodeveloper/prom-apcupsd-exporter.svg)](https://hub.docker.com/repository/docker/iodeveloper/prom-apcupsd-exporter/)
+## Grafana example
+![Grafana](example-grafana.png "Grafana example")
 
-## Docker
-[![Docker Hub repository](http://dockeri.co/image/iodeveloper/prom-apcupsd-exporter)](https://registry.hub.docker.com/r/iodeveloper/prom-apcupsd-exporter)
+## Widget example
+Websocket widget for pad (not included in this project): instant reaction for plug-out and plug-in. Status change: ONLINE -> ONBATTERY (powerout) -> ONLINE
 
-`iodeveloper/prom-apcupsd-exporter:latest`
+![Widget](example-widget.gif "Widget example")
 
-## Example
+#### Prerequisites:
+
 _Both services in docker because server shutdown is not required_
 
 SUA1500i connected via serial port /dev/ttyS0 in smart mode. After start on host appear two ports: 3559 - apcupsd, 3560 - exporter.
@@ -45,7 +55,7 @@ services:
       - "0.0.0.0:3559:3551"
 
   exporter:
-    image: local/apcups_exporter:latest
+    image: iodeveloper/prom-apcupsd-exporter:latest
     restart: always
     ports:
       - "0.0.0.0:3560:8001"
@@ -110,7 +120,4 @@ if [ -f /etc/apcupsd/shuttingdown ]; then
 fi
 ```
 
-#### Websocket widget for pad:
-Instant reaction for plug-out and plug-in. Status change: ONLINE -> ONBATTERY (powerout) -> ONLINE
 
-![Example](example.gif?raw=true "Title")
