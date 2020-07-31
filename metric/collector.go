@@ -2,10 +2,11 @@ package metric
 
 import (
 	"fmt"
-	"local/apcupsd_exporter/apcupsd"
-	"local/apcupsd_exporter/model"
 	"os/exec"
 	"time"
+
+	"github.com/io-developer/prom-apcupsd-exporter/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/model"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"

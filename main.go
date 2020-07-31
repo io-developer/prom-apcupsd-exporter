@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"local/apcupsd_exporter/metric"
-	"local/apcupsd_exporter/model"
-	"local/apcupsd_exporter/server"
 	"net/http"
 	"time"
+
+	"github.com/io-developer/prom-apcupsd-exporter/metric"
+	"github.com/io-developer/prom-apcupsd-exporter/model"
+	"github.com/io-developer/prom-apcupsd-exporter/server"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"

@@ -1,8 +1,9 @@
 package metric
 
 import (
-	"local/apcupsd_exporter/model"
 	"math"
+
+	"github.com/io-developer/prom-apcupsd-exporter/model"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"

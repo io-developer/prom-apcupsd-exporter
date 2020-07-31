@@ -1,10 +1,11 @@
 package server
 
 import (
-	"local/apcupsd_exporter/metric"
-	"local/apcupsd_exporter/model"
 	"net/http"
 	"time"
+
+	"github.com/io-developer/prom-apcupsd-exporter/metric"
+	"github.com/io-developer/prom-apcupsd-exporter/model"
 
 	"github.com/go-kit/kit/log/level"
 )

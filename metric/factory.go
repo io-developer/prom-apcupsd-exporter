@@ -2,11 +2,12 @@ package metric
 
 import (
 	"fmt"
-	"local/apcupsd_exporter/model"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/io-developer/prom-apcupsd-exporter/model"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"

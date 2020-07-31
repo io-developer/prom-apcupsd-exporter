@@ -1,4 +1,4 @@
-module local/apcupsd_exporter
+module github.com/io-developer/prom-apcupsd-exporter
 
 go 1.14
 

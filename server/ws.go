@@ -3,9 +3,10 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"local/apcupsd_exporter/model"
 	"net/http"
 	"time"
+
+	"github.com/io-developer/prom-apcupsd-exporter/model"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"

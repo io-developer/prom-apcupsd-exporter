@@ -1,7 +1,7 @@
 package model
 
 import (
-	"local/apcupsd_exporter/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/apcupsd"
 )
 
 var defaultState = &State{}

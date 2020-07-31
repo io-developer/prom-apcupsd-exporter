@@ -1,8 +1,9 @@
 package server
 
 import (
-	"local/apcupsd_exporter/metric"
 	"net/http"
+
+	"github.com/io-developer/prom-apcupsd-exporter/metric"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
