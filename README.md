@@ -18,25 +18,30 @@
 * Can be integrated with apccontrol signals such as `powerout`, `startselftest` and etc.
 
 * Built-in websocket server allow to connect and notify web clients for events/signals.
-Example: lightweight status widget on pure js/css (responsive alternative to grafana for realtime monitoring).
+Example: lightweight status widget on pure js/css (responsive alternative to grafana for realtime monitoring - see https://github.com/io-developer/vue-ups).
 
 * This exporter calculates events between previous and latest states. Changed fields and new events are broadcasting to connected clients via websocket.
 
 ## Grafana example
+
 ![Grafana](example-grafana.png "Grafana example")
 
 ## Widget example
-Websocket widget for pad (not included in this project): instant reaction for plug-out and plug-in. Status change: ONLINE -> ONBATTERY (powerout) -> ONLINE
+
+Please see https://github.com/io-developer/vue-ups
+
+Websocket widget for Pad: instant reaction for plug-out and plug-in. Status change: ONLINE -> ONBATTERY (powerout) -> ONLINE
 
 ![Widget](example-widget.gif "Widget example")
 
-#### Prerequisites:
+#### Prerequisites
 
 _Both services in docker because server shutdown is not required_
 
 SUA1500i connected via serial port /dev/ttyS0 in smart mode. After start on host appear two ports: 3559 - apcupsd, 3560 - exporter.
 
-#### docker-compose.yml:
+#### docker-compose.yml
+
 ```yml
 version: '3.4'
 
@@ -69,6 +74,7 @@ services:
 ```
 
 #### ./conf/apcupsd.conf
+
 ```ini
 UPSCABLE smart 
 UPSTYPE apcsmart
@@ -87,7 +93,8 @@ NISPORT 3551
 # other by default
 ```
 
-#### ./conf/apccontrol:
+#### ./conf/apccontrol
+
 ```sh
 # ...
 export SYSADMIN=root
@@ -100,7 +107,8 @@ curl -X POST "http://exporter:8001/signal/$1"
 # ...
 ```
 
-#### ./conf/doshutdown:
+#### ./conf/doshutdown
+
 ```sh
 #!/bin/sh
 
@@ -108,7 +116,8 @@ touch /etc/apcupsd/shuttingdown
 exit 99
 ```
 
-#### ./conf/mainsback:
+#### ./conf/mainsback
+
 ```sh
 #!/bin/sh
 
@@ -119,5 +128,3 @@ if [ -f /etc/apcupsd/shuttingdown ]; then
     kill $pid
 fi
 ```
-
-
