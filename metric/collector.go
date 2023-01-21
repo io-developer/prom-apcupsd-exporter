@@ -188,6 +188,7 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 	c.GetFactory().SetConstLabels(prometheus.Labels{
 		"ups_serial": state.UpsSerial,
 		"ups_model":  state.UpsModel,
+                "ups_name":  state.UpsName,
 	})
 
 	metrics, metricsChanged := c.opts.Factory.GetMetrics()
