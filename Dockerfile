@@ -1,3 +1,11 @@
+FROM golang:1.18-alpine as builder
+
+RUN mkdir -p /build
+WORKDIR /build
+
+COPY . ./
+RUN ./build.sh
+
 FROM ubuntu:18.04
 
 ENV \
@@ -13,7 +21,7 @@ RUN \
   && apt-get install -y --no-install-recommends net-tools iputils-ping curl apcupsd \
   && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ADD bin/prom-apcupsd-exporter /prom-apcupsd-exporter
+COPY --from=builder /build/bin/prom-apcupsd-exporter /prom-apcupsd-exporter
 RUN chmod +x /prom-apcupsd-exporter
 
 EXPOSE 8001
