@@ -16,25 +16,27 @@ var defaultFactory = NewFactory()
 
 // CollectorOtps ..
 type CollectorOtps struct {
-	ApcupsdAddr         string
-	ApcaccessPath       string
-	ApcaccessFloodLimit time.Duration
-	CollectInterval     time.Duration
-	ApcupsdStartSkip    time.Duration
-	Factory             *Factory
-	DefaultState        *model.State
+	ApcupsdAddr              string
+	ApcaccessPath            string
+	ApcaccessFloodLimit      time.Duration
+	ApcaccessErrorIgnoreTime time.Duration
+	CollectInterval          time.Duration
+	ApcupsdStartSkip         time.Duration
+	Factory                  *Factory
+	DefaultState             *model.State
 }
 
 // Collector ..
 type Collector struct {
-	opts         *CollectorOtps
-	started      bool
-	collectCh    chan CollectOpts
-	currModel    *model.Model
-	lastOutput   *apcupsd.Output
-	lastOutputTs int64
-	lastState    model.State
-	metrics      []*Metric
+	opts                *CollectorOtps
+	started             bool
+	collectCh           chan CollectOpts
+	currModel           *model.Model
+	lastOutput          *apcupsd.Output
+	lastOutputTs        int64
+	lastSuccessOutputTs int64
+	lastState           model.State
+	metrics             []*Metric
 }
 
 // NewCollector ..
@@ -104,8 +106,21 @@ func (c *Collector) listenCollect() {
 func (c *Collector) collect(opts CollectOpts) {
 	level.Debug(Logger).Log("msg", "collect begin -->")
 
-	c.updateOutput(opts)
-	c.updateModel(opts)
+	if !c.updateOutput(opts) {
+		level.Debug(Logger).Log("msg", "collect updateOutput failed <--")
+		if opts.OnComplete != nil {
+			opts.OnComplete <- true
+		}
+		return
+	}
+	if !c.updateModel(opts) {
+		level.Debug(Logger).Log("msg", "collect updateModel failed <--")
+		if opts.OnComplete != nil {
+			opts.OnComplete <- true
+		}
+		return
+	}
+
 	c.updateMetrics(opts)
 
 	if opts.OnComplete != nil {
@@ -114,37 +129,45 @@ func (c *Collector) collect(opts CollectOpts) {
 	level.Debug(Logger).Log("msg", "collect end <--")
 }
 
-func (c *Collector) updateOutput(opts CollectOpts) {
-	if opts.SkipApcupsdParsing {
-		level.Debug(Logger).Log("msg", "collect: skipping apcupsd output parsing")
-		return
-	}
+func (c *Collector) updateOutput(opts CollectOpts) bool {
 	level.Debug(Logger).Log("msg", "collect: pending apcupsd output")
 
 	ts := time.Now().UnixNano()
 	if opts.PreventFlood && ts-c.lastOutputTs < int64(c.opts.ApcaccessFloodLimit) {
 		level.Debug(Logger).Log("msg", "collect: apcupsd flood detected, skipping")
-		return
+		return false
 	}
 	c.lastOutputTs = ts
 
 	cmdResult, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
-	if err != nil {
+	if err == nil {
+		c.lastSuccessOutputTs = ts
+	} else {
 		level.Error(Logger).Log(
 			"msg", "apcaccess cmd exited with error",
 			"err", err,
 			"result", string(cmdResult),
 		)
 		cmdResult = []byte{}
+
+		if ts-c.lastSuccessOutputTs <= int64(c.opts.ApcaccessErrorIgnoreTime) {
+			level.Warn(Logger).Log(
+				"msg", "Ignoring bad exit code for a while...",
+				"err", err,
+			)
+		}
+		return false
 	}
 
 	c.lastOutput = apcupsd.NewOutput(string(cmdResult))
 	c.lastOutput.Parse()
 
 	c.lastState = c.parseState()
+
+	return true
 }
 
-func (c *Collector) updateModel(opts CollectOpts) {
+func (c *Collector) updateModel(opts CollectOpts) bool {
 	level.Debug(Logger).Log("msg", "collect: updating model")
 
 	dt := time.Now().Sub(c.lastState.ApcupsdStartTime)
@@ -153,7 +176,7 @@ func (c *Collector) updateModel(opts CollectOpts) {
 			"msg", "skipping state update due to start delay",
 			"dt", dt,
 		)
-		return
+		return false
 	}
 
 	c.currModel.Update(c.lastState)
@@ -165,6 +188,8 @@ func (c *Collector) updateModel(opts CollectOpts) {
 			"new", fmt.Sprintf("%#v", diff[1]),
 		)
 	}
+
+	return true
 }
 
 func (c *Collector) parseState() model.State {
@@ -188,7 +213,7 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 	c.GetFactory().SetConstLabels(prometheus.Labels{
 		"ups_serial": state.UpsSerial,
 		"ups_model":  state.UpsModel,
-                "ups_name":  state.UpsName,
+		"ups_name":   state.UpsName,
 	})
 
 	metrics, metricsChanged := c.opts.Factory.GetMetrics()
@@ -208,8 +233,6 @@ func (c *Collector) updateMetrics(opts CollectOpts) {
 
 // CollectOpts ..
 type CollectOpts struct {
-	PreventFlood       bool
-	SkipApcupsdParsing bool
-	Signal             model.Signal
-	OnComplete         chan bool
+	PreventFlood bool
+	OnComplete   chan bool
 }

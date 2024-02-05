@@ -25,14 +25,15 @@ func createLogger(logLevel string) log.Logger {
 }
 
 type cliArgs struct {
-	logLevel            string
-	listenAddr          string
-	apcupsdAddr         string
-	apcaccessPath       string
-	apcaccessFloodLimit time.Duration
-	apcupsdStartSkip    time.Duration
-	collectInterval     time.Duration
-	defaultState        *model.State
+	logLevel                 string
+	listenAddr               string
+	apcupsdAddr              string
+	apcaccessPath            string
+	apcaccessFloodLimit      time.Duration
+	apcaccessErrorIgnoreTime time.Duration
+	apcupsdStartSkip         time.Duration
+	collectInterval          time.Duration
+	defaultState             *model.State
 }
 
 func parseArgs() cliArgs {
@@ -41,8 +42,9 @@ func parseArgs() cliArgs {
 	apcupsd := flag.String("apcupsd", "127.0.0.1:3551", "apcupsd host:port")
 	apcaccess := flag.String("apcaccess", "/sbin/apcaccess", "apcaccess path")
 	floodLimit := flag.Float64("floodLimit", 0.5, "Min time delta between apcaccess calls in seconds")
-	apcupsdStartSkip := flag.Float64("apcupsdStartSkip", 15, "Ignore first N sec agetr apcupsd start")
-	collectInterval := flag.Float64("collectInterval", 10, "Base Collect loop interval in seconds")
+	errorIgnoreTime := flag.Float64("errorIgnoreTime", 120, "Max time in seconds to ignore apcaccess read errors")
+	apcupsdStartSkip := flag.Float64("apcupsdStartSkip", 60, "Ignore first N sec agetr apcupsd start")
+	collectInterval := flag.Float64("collectInterval", 30, "Base Collect loop interval in seconds")
 	defStateJSON := flag.String("defaultModelState", "",
 		"JSON of default values of model state.\n"+
 			"For example: '{\"OutputPowerNominal\": 100500}' returns metric "+
@@ -51,13 +53,14 @@ func parseArgs() cliArgs {
 	flag.Parse()
 
 	args := cliArgs{
-		logLevel:            *logLevel,
-		listenAddr:          *listen,
-		apcupsdAddr:         *apcupsd,
-		apcaccessPath:       *apcaccess,
-		apcaccessFloodLimit: time.Duration(*floodLimit * float64(time.Second)),
-		apcupsdStartSkip:    time.Duration(*apcupsdStartSkip * float64(time.Second)),
-		collectInterval:     time.Duration(*collectInterval * float64(time.Second)),
+		logLevel:                 *logLevel,
+		listenAddr:               *listen,
+		apcupsdAddr:              *apcupsd,
+		apcaccessPath:            *apcaccess,
+		apcaccessFloodLimit:      time.Duration(*floodLimit * float64(time.Second)),
+		apcaccessErrorIgnoreTime: time.Duration(*errorIgnoreTime * float64(time.Second)),
+		apcupsdStartSkip:         time.Duration(*apcupsdStartSkip * float64(time.Second)),
+		collectInterval:          time.Duration(*collectInterval * float64(time.Second)),
 	}
 
 	if *defStateJSON != "" {
@@ -79,12 +82,13 @@ func main() {
 	level.Debug(logger).Log("msg", fmt.Sprintf("Parsed cli args:\n %#v\n\n", args))
 
 	collector := metric.NewCollector(metric.CollectorOtps{
-		ApcupsdAddr:         args.apcupsdAddr,
-		ApcaccessPath:       args.apcaccessPath,
-		ApcaccessFloodLimit: args.apcaccessFloodLimit,
-		ApcupsdStartSkip:    args.apcupsdStartSkip,
-		CollectInterval:     args.collectInterval,
-		DefaultState:        args.defaultState,
+		ApcupsdAddr:              args.apcupsdAddr,
+		ApcaccessPath:            args.apcaccessPath,
+		ApcaccessFloodLimit:      args.apcaccessFloodLimit,
+		ApcaccessErrorIgnoreTime: args.apcaccessErrorIgnoreTime,
+		ApcupsdStartSkip:         args.apcupsdStartSkip,
+		CollectInterval:          args.collectInterval,
+		DefaultState:             args.defaultState,
 	})
 	collector.Start()
 
