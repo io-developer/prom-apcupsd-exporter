@@ -1,5 +1,11 @@
 #!/bin/sh
 
-export CGO_ENABLED=0
+PWD="$(pwd)"
+ROOT="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
-go build -o "$(pwd)/bin/prom-apcupsd-exporter" -tags netgo -a
+cd "$ROOT/cmd/exporter"
+
+export CGO_ENABLED=0
+go build -a -o "$ROOT/bin/prom-apcupsd-exporter" -tags netgo
+
+cd "$PWD"

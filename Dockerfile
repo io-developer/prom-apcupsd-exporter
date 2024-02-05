@@ -6,7 +6,7 @@ WORKDIR /build
 COPY . ./
 RUN ./build.sh
 
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 ENV \
   LANGUAGE=en_US.UTF-8 \

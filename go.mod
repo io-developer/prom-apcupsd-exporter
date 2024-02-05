@@ -1,6 +1,6 @@
 module github.com/io-developer/prom-apcupsd-exporter
 
-go 1.14
+go 1.16
 
 require (
 	github.com/go-kit/kit v0.9.0
