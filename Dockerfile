@@ -24,7 +24,7 @@ RUN \
   && apt-get install -y --no-install-recommends net-tools iputils-ping curl apcupsd \
   && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ADD bin/prom-smartctl-exporter /prom-smartctl-exporter
+ADD bin/prom-apcupsd-exporter /prom-apcupsd-exporter
 
 EXPOSE ${EXPORTER_PORT}
 
