@@ -26,13 +26,6 @@ Example: lightweight status widget on pure js/css (responsive alternative to gra
 
 ![Grafana](example-grafana.png "Grafana example")
 
-## Widget example
-
-Please see https://github.com/io-developer/vue-ups
-
-Websocket widget for Pad: instant reaction for plug-out and plug-in. Status change: ONLINE -> ONBATTERY (powerout) -> ONLINE
-
-![Widget](example-widget.gif "Widget example")
 
 #### Prerequisites
 
@@ -91,20 +84,6 @@ NETSERVER on
 NISPORT 3551
 
 # other by default
-```
-
-#### ./conf/apccontrol
-
-```sh
-# ...
-export SYSADMIN=root
-export APCUPSD_MAIL="mail"
-if [ -f $SCRIPTDIR/config ]; then . $SCRIPTDIR/config ; fi
-
-# signaling the exporter
-curl -X POST "http://exporter:8001/signal/$1"
-
-# ...
 ```
 
 #### ./conf/doshutdown

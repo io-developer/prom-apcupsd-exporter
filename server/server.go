@@ -19,6 +19,4 @@ func Init(l log.Logger, c *metric.Collector) {
 	collector = c
 
 	metricsInit()
-	wsInit()
-	signalsInit()
 }
