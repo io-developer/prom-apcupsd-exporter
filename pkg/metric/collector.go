@@ -5,8 +5,9 @@ import (
 	"os/exec"
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,7 +33,7 @@ type Collector struct {
 	started             bool
 	collectCh           chan CollectOpts
 	currModel           *model.Model
-	lastOutput          *apcupsd.Output
+	lastOutput          *dto.ApcupsdResponse
 	lastOutputTs        int64
 	lastSuccessOutputTs int64
 	lastState           model.State
@@ -45,10 +46,13 @@ func NewCollector(opts CollectorOtps) *Collector {
 		opts.Factory = defaultFactory
 	}
 	return &Collector{
-		opts:       &opts,
-		collectCh:  make(chan CollectOpts),
-		currModel:  model.NewModel(),
-		lastOutput: apcupsd.NewOutput(""),
+		opts:      &opts,
+		collectCh: make(chan CollectOpts),
+		currModel: model.NewModel(),
+		lastOutput: &dto.ApcupsdResponse{
+			Output:    "",
+			KeyValues: make(map[string]string),
+		},
 	}
 }
 
@@ -60,16 +64,6 @@ func (c *Collector) Start() {
 		go c.listenCollect()
 		go c.loopCollect()
 	}
-}
-
-// GetModel method
-func (c *Collector) GetModel() *model.Model {
-	return c.currModel
-}
-
-// GetLastOutput method
-func (c *Collector) GetLastOutput() *apcupsd.Output {
-	return c.lastOutput
 }
 
 // GetFactory method
@@ -139,16 +133,16 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 	}
 	c.lastOutputTs = ts
 
-	cmdResult, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
+	apcaccessOutput, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
 	if err == nil {
 		c.lastSuccessOutputTs = ts
 	} else {
 		level.Error(Logger).Log(
 			"msg", "apcaccess cmd exited with error",
 			"err", err,
-			"result", string(cmdResult),
+			"result", string(apcaccessOutput),
 		)
-		cmdResult = []byte{}
+		apcaccessOutput = []byte{}
 
 		if ts-c.lastSuccessOutputTs <= int64(c.opts.ApcaccessErrorIgnoreTime) {
 			level.Warn(Logger).Log(
@@ -159,8 +153,16 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 		return false
 	}
 
-	c.lastOutput = apcupsd.NewOutput(string(cmdResult))
-	c.lastOutput.Parse()
+	resp, err := parsing.NewApcupsdParser().ParseApcaccessOutput(string(apcaccessOutput))
+	if err != nil {
+		level.Error(Logger).Log(
+			"msg", "apcaccess response parsing error",
+			"err", err,
+			"result", string(apcaccessOutput),
+		)
+	}
+
+	c.lastOutput = resp
 
 	c.lastState = c.parseState()
 
