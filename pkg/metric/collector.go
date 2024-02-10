@@ -2,9 +2,9 @@ package metric
 
 import (
 	"fmt"
-	"os/exec"
 	"time"
 
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/cmd"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
@@ -18,6 +18,7 @@ var defaultFactory = NewFactory()
 // CollectorOtps ..
 type CollectorOtps struct {
 	ApcupsdAddr              string
+	ApcaccessCmd             string
 	ApcaccessPath            string
 	ApcaccessFloodLimit      time.Duration
 	ApcaccessErrorIgnoreTime time.Duration
@@ -133,17 +134,16 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 	}
 	c.lastOutputTs = ts
 
-	apcaccessOutput, err := exec.Command(c.opts.ApcaccessPath, "status", c.opts.ApcupsdAddr).Output()
-	if err == nil {
-		c.lastSuccessOutputTs = ts
-	} else {
+	shell := cmd.NewShell()
+	stdout, stderr, exitCode, err := shell.Exec(c.opts.ApcaccessCmd)
+	if err != nil || exitCode != 0 {
+		//log.Printf("[ERROR] apcaccess: %#v\n%#v\n", err, stderr)
 		level.Error(Logger).Log(
 			"msg", "apcaccess cmd exited with error",
+			"cmd", c.opts.ApcaccessCmd,
 			"err", err,
-			"result", string(apcaccessOutput),
+			"stderr", string(stderr),
 		)
-		apcaccessOutput = []byte{}
-
 		if ts-c.lastSuccessOutputTs <= int64(c.opts.ApcaccessErrorIgnoreTime) {
 			level.Warn(Logger).Log(
 				"msg", "Ignoring bad exit code for a while...",
@@ -153,17 +153,18 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 		return false
 	}
 
-	resp, err := parsing.NewApcupsdParser().ParseApcaccessOutput(string(apcaccessOutput))
+	c.lastSuccessOutputTs = ts
+
+	resp, err := parsing.NewApcupsdParser().ParseApcaccessOutput(string(stdout))
 	if err != nil {
 		level.Error(Logger).Log(
 			"msg", "apcaccess response parsing error",
 			"err", err,
-			"result", string(apcaccessOutput),
+			"result", string(stdout),
 		)
 	}
 
 	c.lastOutput = resp
-
 	c.lastState = c.parseState()
 
 	return true

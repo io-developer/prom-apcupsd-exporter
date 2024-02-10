@@ -28,6 +28,7 @@ type cliArgs struct {
 	logLevel                 string
 	listenAddr               string
 	apcupsdAddr              string
+	apcaccessCmd             string
 	apcaccessPath            string
 	apcaccessFloodLimit      time.Duration
 	apcaccessErrorIgnoreTime time.Duration
@@ -40,6 +41,7 @@ func parseArgs() cliArgs {
 	logLevel := flag.String("logLevel", "info", "Options: debug, info, warn, error")
 	listen := flag.String("listen", "0.0.0.0:8001", "ip:port")
 	apcupsd := flag.String("apcupsd", "127.0.0.1:3551", "apcupsd host:port")
+	apcaccessCmd := flag.String("apcaccessCmd", "/sbin/apcaccess -h 127.0.0.1:3551", "apcaccess cmd")
 	apcaccess := flag.String("apcaccess", "/sbin/apcaccess", "apcaccess path")
 	floodLimit := flag.Float64("floodLimit", 0.5, "Min time delta between apcaccess calls in seconds")
 	errorIgnoreTime := flag.Float64("errorIgnoreTime", 120, "Max time in seconds to ignore apcaccess read errors")
@@ -56,6 +58,7 @@ func parseArgs() cliArgs {
 		logLevel:                 *logLevel,
 		listenAddr:               *listen,
 		apcupsdAddr:              *apcupsd,
+		apcaccessCmd:             *apcaccessCmd,
 		apcaccessPath:            *apcaccess,
 		apcaccessFloodLimit:      time.Duration(*floodLimit * float64(time.Second)),
 		apcaccessErrorIgnoreTime: time.Duration(*errorIgnoreTime * float64(time.Second)),
@@ -83,6 +86,7 @@ func main() {
 
 	collector := metric.NewCollector(metric.CollectorOtps{
 		ApcupsdAddr:              args.apcupsdAddr,
+		ApcaccessCmd:             args.apcaccessCmd,
 		ApcaccessPath:            args.apcaccessPath,
 		ApcaccessFloodLimit:      args.apcaccessFloodLimit,
 		ApcaccessErrorIgnoreTime: args.apcaccessErrorIgnoreTime,
