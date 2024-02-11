@@ -1,26 +1,19 @@
 package model
 
-const defaultEventLimit = 30
-
-// Model data
 type Model struct {
 	State         State
 	PrevState     State
-	EventLimit    int
 	ChangedFields map[string][]interface{}
 }
 
-// NewModel ..
 func NewModel() *Model {
 	return &Model{
 		State:         NewState(),
 		PrevState:     NewState(),
 		ChangedFields: map[string][]interface{}{},
-		EventLimit:    defaultEventLimit,
 	}
 }
 
-// Update method
 func (m *Model) Update(newState State) {
 	m.PrevState = m.State
 	m.State = newState
@@ -32,7 +25,6 @@ func (m *Model) Update(newState State) {
 	m.ChangedFields = diff
 }
 
-// updateStatusCounts method
 func (m *Model) updateStatusCounts() {
 	m.State.UpsStatus.FlagChangeCounts = m.PrevState.UpsStatus.CloneFlagChangeCounts()
 
@@ -47,7 +39,6 @@ func (m *Model) updateStatusCounts() {
 	}
 }
 
-// updateTransferOnbatt method
 func (m *Model) updateTransferOnbatt() {
 	// Reveal hidden quick transfers on battery and back
 	transDelta := int64(m.State.UpsTransferOnBatteryCount) -
