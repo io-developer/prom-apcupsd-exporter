@@ -7,24 +7,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
 )
 
-type ApcupsdParser struct {
+type ApcaccessParser struct {
 	ReDurationSeconds *regexp.Regexp
 	ReDurationMinutes *regexp.Regexp
 	ReDurationDays    *regexp.Regexp
 }
 
-func NewApcupsdParser() *ApcupsdParser {
-	return &ApcupsdParser{
+func NewApcaccessParser() *ApcaccessParser {
+	return &ApcaccessParser{
 		ReDurationSeconds: regexp.MustCompile(`(?i)^\s*(?P<number>[-+]?\d[\d.,]+)\s*(Seconds|Second|Sec)$`),
 		ReDurationMinutes: regexp.MustCompile(`(?i)^\s*(?P<number>[-+]?\d[\d.,]+)\s*(Minutes|Minute|Min)$`),
 		ReDurationDays:    regexp.MustCompile(`(?i)^\s*(?P<number>[-+]?\d[\d.,]+)\s*(Days|Day)$`),
 	}
 }
 
-func (p *ApcupsdParser) ParseApcaccessOutput(output string) (*dto.ApcupsdResponse, error) {
+func (p *ApcaccessParser) ParseOutput(output string) (*apcupsd.ApcaccessResponse, error) {
 	keyVals := make(map[string]string)
 	for _, line := range strings.Split(output, "\n") {
 		slice := strings.SplitN(line, ":", 2)
@@ -34,17 +34,17 @@ func (p *ApcupsdParser) ParseApcaccessOutput(output string) (*dto.ApcupsdRespons
 			keyVals[key] = val
 		}
 	}
-	return &dto.ApcupsdResponse{
+	return &apcupsd.ApcaccessResponse{
 		Output:    output,
 		KeyValues: keyVals,
 	}, nil
 }
 
-func (r *ApcupsdParser) ParseTextAsUint(text string) (uint64, error) {
+func (r *ApcaccessParser) ParseTextAsUint(text string) (uint64, error) {
 	return strconv.ParseUint(text, 0, 64)
 }
 
-func (p *ApcupsdParser) ParseTextAsNumber(text string) (val float64, err error) {
+func (p *ApcaccessParser) ParseTextAsNumber(text string) (val float64, err error) {
 	numStr := regexp.MustCompile(`^[-+]?\d[\d.,]*`).FindString(text)
 	if numStr != "" {
 		return strconv.ParseFloat(numStr, 64)
@@ -57,7 +57,7 @@ func (p *ApcupsdParser) ParseTextAsNumber(text string) (val float64, err error) 
 	return 0, errors.New("None number parsed")
 }
 
-func (p *ApcupsdParser) ParseTextAsTime(text string) (val time.Time, err error) {
+func (p *ApcaccessParser) ParseTextAsTime(text string) (val time.Time, err error) {
 	t, err := time.Parse("2006-01-02 15:04:05 -0700", text)
 	if err != nil {
 		t, err = time.Parse("2006-01-02 15:04:05", text)
@@ -74,7 +74,7 @@ func (p *ApcupsdParser) ParseTextAsTime(text string) (val time.Time, err error) 
 	return t, nil
 }
 
-func (p *ApcupsdParser) ParseTextAsDurationSeconds(text string) (val int64, err error) {
+func (p *ApcaccessParser) ParseTextAsDurationSeconds(text string) (val int64, err error) {
 	str, mult := "", 1.0
 	if m := p.ReDurationSeconds.FindStringSubmatch(text); m != nil {
 		str, mult = m[1], 1.0

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/cmd"
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
 
@@ -34,7 +34,7 @@ type Collector struct {
 	started             bool
 	collectCh           chan CollectOpts
 	currModel           *model.Model
-	lastOutput          *dto.ApcupsdResponse
+	lastOutput          *apcupsd.ApcaccessResponse
 	lastOutputTs        int64
 	lastSuccessOutputTs int64
 	lastState           model.State
@@ -50,7 +50,7 @@ func NewCollector(opts CollectorOtps) *Collector {
 		opts:      &opts,
 		collectCh: make(chan CollectOpts),
 		currModel: model.NewModel(),
-		lastOutput: &dto.ApcupsdResponse{
+		lastOutput: &apcupsd.ApcaccessResponse{
 			Output:    "",
 			KeyValues: make(map[string]string),
 		},
@@ -155,7 +155,7 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 
 	c.lastSuccessOutputTs = ts
 
-	resp, err := parsing.NewApcupsdParser().ParseApcaccessOutput(string(stdout))
+	resp, err := parsing.NewApcaccessParser().ParseOutput(string(stdout))
 	if err != nil {
 		level.Error(Logger).Log(
 			"msg", "apcaccess response parsing error",

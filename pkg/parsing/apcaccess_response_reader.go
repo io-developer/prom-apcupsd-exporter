@@ -3,29 +3,29 @@ package parsing
 import (
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
 )
 
-type ApcupsdResponseReader struct {
-	Response *dto.ApcupsdResponse
-	Parser   *ApcupsdParser
+type ApcaccessResponseReader struct {
+	Response *apcupsd.ApcaccessResponse
+	Parser   *ApcaccessParser
 }
 
-func NewApcupsdResponseReader(response *dto.ApcupsdResponse) *ApcupsdResponseReader {
-	return &ApcupsdResponseReader{
+func NewApcaccessResponseReader(response *apcupsd.ApcaccessResponse) *ApcaccessResponseReader {
+	return &ApcaccessResponseReader{
 		Response: response,
-		Parser:   NewApcupsdParser(),
+		Parser:   NewApcaccessParser(),
 	}
 }
 
-func (r *ApcupsdResponseReader) GetValueAt(key string, def string) string {
+func (r *ApcaccessResponseReader) GetValueAt(key string, def string) string {
 	if val, exists := r.Response.KeyValues[key]; exists {
 		return val
 	}
 	return def
 }
 
-func (r *ApcupsdResponseReader) GetFloatAt(key string, def float64) float64 {
+func (r *ApcaccessResponseReader) GetFloatAt(key string, def float64) float64 {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if val, err := r.Parser.ParseTextAsNumber(raw); err == nil {
 			return val
@@ -34,7 +34,7 @@ func (r *ApcupsdResponseReader) GetFloatAt(key string, def float64) float64 {
 	return def
 }
 
-func (r *ApcupsdResponseReader) GetUintAt(key string, def uint64) uint64 {
+func (r *ApcaccessResponseReader) GetUintAt(key string, def uint64) uint64 {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if val, err := r.Parser.ParseTextAsUint(raw); err == nil {
 			return val
@@ -43,7 +43,7 @@ func (r *ApcupsdResponseReader) GetUintAt(key string, def uint64) uint64 {
 	return def
 }
 
-func (r *ApcupsdResponseReader) GetTimeAt(key string, def time.Time) time.Time {
+func (r *ApcaccessResponseReader) GetTimeAt(key string, def time.Time) time.Time {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if val, err := r.Parser.ParseTextAsTime(raw); err == nil {
 			return val
@@ -52,7 +52,7 @@ func (r *ApcupsdResponseReader) GetTimeAt(key string, def time.Time) time.Time {
 	return def
 }
 
-func (r *ApcupsdResponseReader) GetDurationSecondsAt(key string, def int64) int64 {
+func (r *ApcaccessResponseReader) GetDurationSecondsAt(key string, def int64) int64 {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if val, err := r.Parser.ParseTextAsDurationSeconds(raw); err == nil {
 			return val
@@ -61,7 +61,7 @@ func (r *ApcupsdResponseReader) GetDurationSecondsAt(key string, def int64) int6
 	return def
 }
 
-func (r *ApcupsdResponseReader) GetMappedAt(key string, kvMap map[string]interface{}, def interface{}) interface{} {
+func (r *ApcaccessResponseReader) GetMappedAt(key string, kvMap map[string]interface{}, def interface{}) interface{} {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if mapped, mappedExists := kvMap[raw]; mappedExists {
 			return mapped

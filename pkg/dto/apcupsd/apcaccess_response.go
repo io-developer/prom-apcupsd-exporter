@@ -1,6 +1,6 @@
-package dto
+package apcupsd
 
-type ApcupsdResponse struct {
+type ApcaccessResponse struct {
 	Output    string
 	KeyValues map[string]string
 }
