@@ -3,14 +3,66 @@ package apcupsd
 type BatteryTransferReason uint8
 
 const (
-	BATTERY_TRANSFER_REASON__NA         = BatteryTransferReason(0)
-	BATTERY_TRANSFER_REASON__NONE       = BatteryTransferReason(1)
-	BATTERY_TRANSFER_REASON__SELFTEST   = BatteryTransferReason(2)
-	BATTERY_TRANSFER_REASON__FORCED     = BatteryTransferReason(3)
-	BATTERY_TRANSFER_REASON__UNDERVOLT  = BatteryTransferReason(4)
-	BATTERY_TRANSFER_REASON__OVERVOLT   = BatteryTransferReason(5)
-	BATTERY_TRANSFER_REASON__RIPPLE     = BatteryTransferReason(6)
-	BATTERY_TRANSFER_REASON__NOTCHSPIKE = BatteryTransferReason(7)
-	BATTERY_TRANSFER_REASON__FREQ       = BatteryTransferReason(8)
-	BATTERY_TRANSFER_REASON__UNKNOWN    = BatteryTransferReason(9)
+	BATTERY_TRANSFER_REASON__NA = BatteryTransferReason(iota)
+	BATTERY_TRANSFER_REASON__NONE
+	BATTERY_TRANSFER_REASON__OVERVOLT
+	BATTERY_TRANSFER_REASON__UNDERVOLT
+	BATTERY_TRANSFER_REASON__NOTCHSPIKE
+	BATTERY_TRANSFER_REASON__RIPPLE
+	BATTERY_TRANSFER_REASON__SELFTEST
+	BATTERY_TRANSFER_REASON__FORCED
+	BATTERY_TRANSFER_REASON__FREQ
+	BATTERY_TRANSFER_REASON__UNKNOWN
 )
+
+var BATTERY_TRANSFER_REASON_TO_NAME = map[BatteryTransferReason]string{
+	BATTERY_TRANSFER_REASON__NA:         "NA",
+	BATTERY_TRANSFER_REASON__NONE:       "No transfers since turnon",
+	BATTERY_TRANSFER_REASON__OVERVOLT:   "High line voltage",
+	BATTERY_TRANSFER_REASON__UNDERVOLT:  "Low line voltage",
+	BATTERY_TRANSFER_REASON__NOTCHSPIKE: "Line voltage notch or spike",
+	BATTERY_TRANSFER_REASON__RIPPLE:     "Unacceptable line voltage changes",
+	BATTERY_TRANSFER_REASON__SELFTEST:   "Automatic or explicit self test",
+	BATTERY_TRANSFER_REASON__FORCED:     "Forced by software",
+	BATTERY_TRANSFER_REASON__FREQ:       "Input frequency out of range",
+	BATTERY_TRANSFER_REASON__UNKNOWN:    "UNKNOWN EVENT",
+}
+
+var BATTERY_TRANSFER_REASON_TO_SHORT_NAME = map[BatteryTransferReason]string{
+	BATTERY_TRANSFER_REASON__NA:         "NA",
+	BATTERY_TRANSFER_REASON__NONE:       "none",
+	BATTERY_TRANSFER_REASON__OVERVOLT:   "overvolt",
+	BATTERY_TRANSFER_REASON__UNDERVOLT:  "undervolt",
+	BATTERY_TRANSFER_REASON__NOTCHSPIKE: "notchspike",
+	BATTERY_TRANSFER_REASON__RIPPLE:     "ripple",
+	BATTERY_TRANSFER_REASON__SELFTEST:   "selftest",
+	BATTERY_TRANSFER_REASON__FORCED:     "forced",
+	BATTERY_TRANSFER_REASON__FREQ:       "freq",
+	BATTERY_TRANSFER_REASON__UNKNOWN:    "unknown",
+}
+
+var BATTERY_TRANSFER_REASON_FROM_NAME = map[string]BatteryTransferReason{
+	"NA":                                BATTERY_TRANSFER_REASON__NA,
+	"No transfers since turnon":         BATTERY_TRANSFER_REASON__NONE,
+	"High line voltage":                 BATTERY_TRANSFER_REASON__OVERVOLT,
+	"Low line voltage":                  BATTERY_TRANSFER_REASON__UNDERVOLT,
+	"Line voltage notch or spike":       BATTERY_TRANSFER_REASON__NOTCHSPIKE,
+	"Unacceptable line voltage changes": BATTERY_TRANSFER_REASON__RIPPLE,
+	"Automatic or explicit self test":   BATTERY_TRANSFER_REASON__SELFTEST,
+	"Forced by software":                BATTERY_TRANSFER_REASON__FORCED,
+	"Input frequency out of range":      BATTERY_TRANSFER_REASON__FREQ,
+	"UNKNOWN EVENT":                     BATTERY_TRANSFER_REASON__UNKNOWN,
+}
+
+var BATTERY_TRANSFER_REASON_FROM_SHORT_NAME = map[string]BatteryTransferReason{
+	"NA":         BATTERY_TRANSFER_REASON__NA,
+	"none":       BATTERY_TRANSFER_REASON__NONE,
+	"overvolt":   BATTERY_TRANSFER_REASON__OVERVOLT,
+	"undervolt":  BATTERY_TRANSFER_REASON__UNDERVOLT,
+	"notchspike": BATTERY_TRANSFER_REASON__NOTCHSPIKE,
+	"ripple":     BATTERY_TRANSFER_REASON__RIPPLE,
+	"selftest":   BATTERY_TRANSFER_REASON__SELFTEST,
+	"forced":     BATTERY_TRANSFER_REASON__FORCED,
+	"freq":       BATTERY_TRANSFER_REASON__FREQ,
+	"unknown":    BATTERY_TRANSFER_REASON__UNKNOWN,
+}

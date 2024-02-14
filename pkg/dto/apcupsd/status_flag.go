@@ -1,14 +1,5 @@
 package apcupsd
 
-type StatusState struct {
-	Flag         StatusFlag
-	Flags        StatusFlagState
-	FlagCounters StatusFlagCounters
-	Reg1         uint64
-	Reg2         uint64
-	Reg3         uint64
-}
-
 type StatusFlag uint64
 
 const (
@@ -35,51 +26,3 @@ const (
 	STATUS_FLAG__PLUGGED                  = StatusFlag(0x01000000)
 	STATUS_FLAG__BATTERYPRECENT           = StatusFlag(0x04000000)
 )
-
-type StatusFlagState struct {
-	Calibration          bool
-	Trim                 bool
-	Boost                bool
-	Online               bool
-	OnBattery            bool
-	Overload             bool
-	BatteryLow           bool
-	ReplaceBattery       bool
-	CommunicationLost    bool
-	ShutdownInProgress   bool
-	Slave                bool
-	SlaveDown            bool
-	OnBatteryMessage     bool
-	FastPoll             bool
-	ShutdownBatteryLevel bool
-	ShutdownBatteryTime  bool
-	ShutdownTimeLeft     bool
-	ShutdownEmergency    bool
-	ShutdownRemote       bool
-	Plugged              bool
-	BatteryPrecent       bool
-}
-
-type StatusFlagCounters struct {
-	Calibration          uint64
-	Trim                 uint64
-	Boost                uint64
-	Online               uint64
-	OnBattery            uint64
-	Overload             uint64
-	BatteryLow           uint64
-	ReplaceBattery       uint64
-	CommunicationLost    uint64
-	ShutdownInProgress   uint64
-	Slave                uint64
-	SlaveDown            uint64
-	OnBatteryMessage     uint64
-	FastPoll             uint64
-	ShutdownBatteryLevel uint64
-	ShutdownBatteryTime  uint64
-	ShutdownTimeLeft     uint64
-	ShutdownEmergency    uint64
-	ShutdownRemote       uint64
-	Plugged              uint64
-	BatteryPrecent       uint64
-}
