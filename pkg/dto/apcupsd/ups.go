@@ -64,7 +64,7 @@ type UpsBattery struct {
 	ChargeLevel    float64
 	Voltage        float64
 	VoltageNominal float64
-	Timeleft       time.Duration
+	Timeeft        time.Duration
 	ExternalCount  uint16
 	BadCount       uint16
 	ReplacedDate   time.Time
@@ -101,25 +101,25 @@ type UpsStatus struct {
 }
 
 type UpsStatusFlagState struct {
-	Calibration          bool
-	Trim                 bool
-	Boost                bool
-	Online               bool
-	OnBattery            bool
-	Overload             bool
-	BatteryLow           bool
-	ReplaceBattery       bool
-	CommunicationLost    bool
-	ShutdownInProgress   bool
-	Slave                bool
-	SlaveDown            bool
-	OnBatteryMessage     bool
-	FastPoll             bool
-	ShutdownBatteryLevel bool
-	ShutdownBatteryTime  bool
-	ShutdownTimeLeft     bool
-	ShutdownEmergency    bool
-	ShutdownRemote       bool
-	Plugged              bool
-	BatteryPrecent       bool
+	Calibration             bool
+	Trim                    bool
+	Boost                   bool
+	Online                  bool
+	OnBattery               bool
+	Overload                bool
+	BatteryLow              bool
+	ReplaceBattery          bool
+	CommunicationLost       bool
+	Shutdown                bool
+	Slave                   bool
+	SlaveDown               bool
+	OnBatteryMessageSent    bool
+	FastPoll                bool
+	ShutdownBatteryLevel    bool
+	ShutdownBatteryTime     bool
+	ShutdownBatteryTimeLeft bool
+	ShutdownEmergency       bool
+	ShutdownRemote          bool
+	Plugged                 bool
+	BatteryPresent          bool
 }
