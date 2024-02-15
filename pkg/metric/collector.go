@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/cmd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/cli"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
@@ -134,7 +134,7 @@ func (c *Collector) updateOutput(opts CollectOpts) bool {
 	}
 	c.lastOutputTs = ts
 
-	shell := cmd.NewShell()
+	shell := cli.NewShell()
 	stdout, stderr, exitCode, err := shell.Exec(c.opts.ApcaccessCmd)
 	if err != nil || exitCode != 0 {
 		//log.Printf("[ERROR] apcaccess: %#v\n%#v\n", err, stderr)

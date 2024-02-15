@@ -52,6 +52,15 @@ func (r *ApcaccessResponseReader) GetTimeAt(key string, def time.Time) time.Time
 	return def
 }
 
+func (r *ApcaccessResponseReader) GetDurationAt(key string, def time.Duration) time.Duration {
+	if raw, exists := r.Response.KeyValues[key]; exists {
+		if val, err := r.Parser.ParseTextAsDurationSeconds(raw); err == nil {
+			return time.Duration(val) * time.Second
+		}
+	}
+	return def
+}
+
 func (r *ApcaccessResponseReader) GetDurationSecondsAt(key string, def int64) int64 {
 	if raw, exists := r.Response.KeyValues[key]; exists {
 		if val, err := r.Parser.ParseTextAsDurationSeconds(raw); err == nil {

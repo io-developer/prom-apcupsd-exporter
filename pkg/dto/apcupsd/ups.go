@@ -5,7 +5,7 @@ import (
 )
 
 type Ups struct {
-	Information     UpsInformation
+	HardwareInfo    UpsHardwareInfo
 	Config          UpsConfig
 	LineIn          UpsLineIn
 	LineOut         UpsLineOut
@@ -16,13 +16,11 @@ type Ups struct {
 	Status          UpsStatus
 }
 
-type UpsInformation struct {
+type UpsHardwareInfo struct {
 	Model            string
 	Serial           string
 	Firmware         string
 	ManafacturedDate time.Time
-	Version          string
-	StartTime        time.Time
 }
 
 type UpsConfig struct {
@@ -39,7 +37,8 @@ type UpsConfig struct {
 	ShutdownBatteryTimeLeft time.Duration
 	WakeupDelay             time.Duration
 	WakeupBatteryLevel      float64
-	LowBatteryTimeLeft      time.Duration
+	StartTime               time.Time
+	Version                 string
 }
 
 type UpsLineIn struct {
@@ -61,13 +60,14 @@ type UpsLineOut struct {
 }
 
 type UpsBattery struct {
-	ChargeLevel    float64
-	Voltage        float64
-	VoltageNominal float64
-	Timeeft        time.Duration
-	ExternalCount  uint16
-	BadCount       uint16
-	ReplacedDate   time.Time
+	ChargeLevel        float64
+	Voltage            float64
+	VoltageNominal     float64
+	TimeLeft           time.Duration
+	LowLevelAtTimeLeft time.Duration
+	ExternalCount      uint16
+	BadCount           uint16
+	ReplacedDate       time.Time
 }
 
 type UpsBatteryTransfer struct {
@@ -93,6 +93,7 @@ type UpsSensors struct {
 }
 
 type UpsStatus struct {
+	Text      string
 	Flag      StatusFlag
 	FlagState UpsStatusFlagState
 	Reg1      uint64
