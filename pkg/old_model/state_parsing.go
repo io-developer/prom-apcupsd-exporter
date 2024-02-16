@@ -1,4 +1,4 @@
-package model
+package old_model
 
 import (
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"

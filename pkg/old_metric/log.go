@@ -1,4 +1,4 @@
-package metric
+package old_metric
 
 import "github.com/prometheus/common/promlog"
 

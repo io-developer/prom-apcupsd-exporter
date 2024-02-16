@@ -1,4 +1,4 @@
-package metric
+package old_metric
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/cli"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_model"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
 
 	"github.com/go-kit/kit/log/level"
@@ -25,7 +25,7 @@ type CollectorOtps struct {
 	CollectInterval          time.Duration
 	ApcupsdStartSkip         time.Duration
 	Factory                  *Factory
-	DefaultState             *model.State
+	DefaultState             *old_model.State
 }
 
 // Collector ..
@@ -33,11 +33,11 @@ type Collector struct {
 	opts                *CollectorOtps
 	started             bool
 	collectCh           chan CollectOpts
-	currModel           *model.Model
+	currModel           *old_model.Model
 	lastOutput          *dto.ApcaccessResponse
 	lastOutputTs        int64
 	lastSuccessOutputTs int64
-	lastState           model.State
+	lastState           old_model.State
 	metrics             []*Metric
 }
 
@@ -49,7 +49,7 @@ func NewCollector(opts CollectorOtps) *Collector {
 	return &Collector{
 		opts:      &opts,
 		collectCh: make(chan CollectOpts),
-		currModel: model.NewModel(),
+		currModel: old_model.NewModel(),
 		lastOutput: &dto.ApcaccessResponse{
 			Output:    "",
 			KeyValues: make(map[string]string),
@@ -195,9 +195,9 @@ func (c *Collector) updateModel(opts CollectOpts) bool {
 	return true
 }
 
-func (c *Collector) parseState() model.State {
+func (c *Collector) parseState() old_model.State {
 	prev := c.currModel.PrevState
-	state := model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
+	state := old_model.NewStateFromOutput(c.lastOutput, c.opts.DefaultState)
 
 	if state.UpsTransferOffBatteryDate.Sub(prev.UpsTransferOffBatteryDate) < 0 {
 		state.UpsTransferOffBatteryDate = prev.UpsTransferOffBatteryDate

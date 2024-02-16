@@ -1,4 +1,4 @@
-package model
+package old_model
 
 type Model struct {
 	State         State

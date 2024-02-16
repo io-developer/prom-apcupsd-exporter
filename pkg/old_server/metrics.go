@@ -1,11 +1,10 @@
-package server
+package old_server
 
 import (
 	"net/http"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/metric"
-
 	"github.com/go-kit/kit/log/level"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_metric"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -18,7 +17,7 @@ func metricsInit() {
 
 func metrcisHandle(w http.ResponseWriter, r *http.Request) {
 	onComplete := make(chan bool)
-	collector.Collect(metric.CollectOpts{
+	collector.Collect(old_metric.CollectOpts{
 		PreventFlood: true,
 		OnComplete:   onComplete,
 	})

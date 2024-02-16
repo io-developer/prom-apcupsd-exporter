@@ -1,4 +1,4 @@
-package metric
+package old_metric
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_model"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -55,11 +55,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_input_sensitivity",
 				Help: "**SENSE** The sensitivity level of the UPS to line voltage fluctuations. " +
-					typesToDesc(model.SensivityTypes),
+					typesToDesc(old_model.SensivityTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.InputSensivity.Type)
 			},
 		},
@@ -70,7 +70,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputFrequency
 			},
 		},
@@ -81,7 +81,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltage
 			},
 		},
@@ -92,7 +92,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltageMin
 			},
 		},
@@ -103,7 +103,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltageMax
 			},
 		},
@@ -114,7 +114,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltageNominal
 			},
 		},
@@ -125,7 +125,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltageTransferLow
 			},
 		},
@@ -136,7 +136,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.InputVoltageTransferHigh
 			},
 		},
@@ -149,7 +149,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputLoad
 			},
 		},
@@ -160,7 +160,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputAmps
 			},
 		},
@@ -171,7 +171,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputPowerNominal
 			},
 		},
@@ -182,7 +182,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputPowerApparentNominal
 			},
 		},
@@ -193,7 +193,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputVoltage
 			},
 		},
@@ -204,7 +204,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.OutputVoltageNominal
 			},
 		},
@@ -217,7 +217,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.BatteryCharge
 			},
 		},
@@ -228,7 +228,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.BatteryVoltage
 			},
 		},
@@ -239,7 +239,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.BatteryVoltageNominal
 			},
 		},
@@ -250,7 +250,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.BatteryExternalCount)
 			},
 		},
@@ -261,7 +261,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.BatteryBadCount)
 			},
 		},
@@ -272,7 +272,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.BatteryReplacedDate.Unix())
 			},
 		},
@@ -285,7 +285,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsManafacturedDate.Unix())
 			},
 		},
@@ -294,11 +294,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_status",
 				Help: "Current status vec labeled by flag. Value 0 or single flag. Flags: " +
-					typedFlagsToDescFmt(model.StatusFlags, "0x%08x='%s'"),
+					typedFlagsToDescFmt(old_model.StatusFlags, "0x%08x='%s'"),
 
 				ConstLabels: f.constLabels,
 			}, []string{"flag"}),
-			HandlerFunc: func(m *Metric, model *model.Model) {
+			HandlerFunc: func(m *Metric, model *old_model.Model) {
 				gaugeVec := m.Collector.(*prometheus.GaugeVec)
 				for name, val := range model.State.UpsStatus.GetFlags() {
 					gaugeVec.WithLabelValues(name).Set(float64(val))
@@ -313,7 +313,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}, []string{"flag"}),
-			HandlerFunc: func(m *Metric, model *model.Model) {
+			HandlerFunc: func(m *Metric, model *old_model.Model) {
 				gaugeVec := m.Collector.(*prometheus.GaugeVec)
 				for name, val := range model.State.UpsStatus.GetNormedFlags(false) {
 					gaugeVec.WithLabelValues(name).Set(float64(val))
@@ -328,7 +328,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}, []string{"flag"}),
-			HandlerFunc: func(m *Metric, model *model.Model) {
+			HandlerFunc: func(m *Metric, model *old_model.Model) {
 				counterVec := m.Collector.(*prometheus.CounterVec)
 				for name, val := range model.State.UpsStatus.FlagChangeCounts {
 					counter := counterVec.WithLabelValues(name)
@@ -348,7 +348,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsStatus.Flag)
 			},
 		},
@@ -359,7 +359,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsDipSwitchFlag)
 			},
 		},
@@ -370,7 +370,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsReg1)
 			},
 		},
@@ -381,7 +381,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsReg2)
 			},
 		},
@@ -392,7 +392,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsReg3)
 			},
 		},
@@ -403,7 +403,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTimeleftSeconds)
 			},
 		},
@@ -414,7 +414,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTimeleftSecondsLowBattery)
 			},
 		},
@@ -425,7 +425,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTransferOnBatteryCount)
 			},
 		},
@@ -433,11 +433,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_transfer_onbattery_reason",
 				Help: "**LASTXFER** The reason for the last transfer to batteries." +
-					typesToDesc(model.TransferOnbatteryReasonTypes),
+					typesToDesc(old_model.TransferOnbatteryReasonTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTransferOnBatteryReason.Type)
 			},
 		},
@@ -448,7 +448,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsOnBatterySeconds)
 			},
 		},
@@ -459,7 +459,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsOnBatterySecondsCumulative)
 			},
 		},
@@ -470,7 +470,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTransferOnBatteryDate.Unix())
 			},
 		},
@@ -481,7 +481,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTransferOffBatteryDate.Unix())
 			},
 		},
@@ -492,7 +492,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTurnOnDelaySeconds)
 			},
 		},
@@ -503,7 +503,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.UpsTurnOnBatteryMin
 			},
 		},
@@ -514,7 +514,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsTurnOffDelaySeconds)
 			},
 		},
@@ -525,7 +525,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.UpsTempInternal
 			},
 		},
@@ -536,7 +536,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.UpsTempAmbient
 			},
 		},
@@ -547,7 +547,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.UpsHumidity
 			},
 		},
@@ -555,11 +555,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_alarm_mode",
 				Help: "**ALARMDEL** The delay period for the UPS alarm." +
-					typesToDesc(model.AlarmModeTypes),
+					typesToDesc(old_model.AlarmModeTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsAlarmMode.Type)
 			},
 		},
@@ -567,11 +567,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_selftest_result",
 				Help: "**SELFTEST** The results of the last self test, and may have the following values." +
-					typesToDesc(model.SelftestResultTypes),
+					typesToDesc(old_model.SelftestResultTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsSelftestResult.Type)
 			},
 		},
@@ -582,7 +582,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsSelftestIntervalSeconds)
 			},
 		},
@@ -590,11 +590,11 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_cable",
 				Help: "**CABLE** The cable as specified in the configuration file ('UPSCABLE')." +
-					typesToDescFmt(model.CableTypes, "% 3d='%s'"),
+					typesToDescFmt(old_model.CableTypes, "% 3d='%s'"),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsCable.Type)
 			},
 		},
@@ -602,22 +602,22 @@ func (f *Factory) createMetrics() []*Metric {
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_driver",
 				Help: "**DRIVER** type." +
-					typesToDesc(model.DriverTypes),
+					typesToDesc(old_model.DriverTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsDriver.Type)
 			},
 		},
 		{
 			Collector: prometheus.NewGauge(prometheus.GaugeOpts{
 				Name: "apcupsd_ups_mode",
-				Help: "**UPSMODE** The mode in which apcupsd is operating as specified in the configuration file ('UPSMODE'). " + typesToDesc(model.ModeTypes),
+				Help: "**UPSMODE** The mode in which apcupsd is operating as specified in the configuration file ('UPSMODE'). " + typesToDesc(old_model.ModeTypes),
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.UpsMode.Type)
 			},
 		},
@@ -630,7 +630,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return model.State.ShutdownBatteryMin
 			},
 		},
@@ -641,7 +641,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.ShutdownTimeleftSecondsMin)
 			},
 		},
@@ -652,7 +652,7 @@ func (f *Factory) createMetrics() []*Metric {
 
 				ConstLabels: f.constLabels,
 			}),
-			ValFunc: func(m *Metric, model *model.Model) float64 {
+			ValFunc: func(m *Metric, model *old_model.Model) float64 {
 				return float64(model.State.ShutdownOnBatterySecondsMax)
 			},
 		},

@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/metric"
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/server"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_metric"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_model"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_server"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -34,7 +34,7 @@ type cliArgs struct {
 	apcaccessErrorIgnoreTime time.Duration
 	apcupsdStartSkip         time.Duration
 	collectInterval          time.Duration
-	defaultState             *model.State
+	defaultState             *old_model.State
 }
 
 func parseArgs() cliArgs {
@@ -67,7 +67,7 @@ func parseArgs() cliArgs {
 	}
 
 	if *defStateJSON != "" {
-		args.defaultState = &model.State{}
+		args.defaultState = &old_model.State{}
 		if err := json.Unmarshal([]byte(*defStateJSON), args.defaultState); err != nil {
 			args.defaultState = nil
 		}
@@ -80,11 +80,11 @@ func main() {
 	args := parseArgs()
 
 	logger = createLogger(args.logLevel)
-	metric.Logger = logger
+	old_metric.Logger = logger
 
 	level.Debug(logger).Log("msg", fmt.Sprintf("Parsed cli args:\n %#v\n\n", args))
 
-	collector := metric.NewCollector(metric.CollectorOtps{
+	collector := old_metric.NewCollector(old_metric.CollectorOtps{
 		ApcupsdAddr:              args.apcupsdAddr,
 		ApcaccessCmd:             args.apcaccessCmd,
 		ApcaccessPath:            args.apcaccessPath,
@@ -96,7 +96,7 @@ func main() {
 	})
 	collector.Start()
 
-	server.Init(logger, collector)
+	old_server.Init(logger, collector)
 
 	logger.Log("msg", fmt.Sprintf("Starting exporter at %s\n\n", args.listenAddr))
 

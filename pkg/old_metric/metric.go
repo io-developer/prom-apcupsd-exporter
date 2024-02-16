@@ -1,9 +1,9 @@
-package metric
+package old_metric
 
 import (
 	"math"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/old_model"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -12,8 +12,8 @@ import (
 // Metric struct
 type Metric struct {
 	Collector    prometheus.Collector
-	HandlerFunc  func(m *Metric, model *model.Model)
-	ValFunc      func(m *Metric, model *model.Model) float64
+	HandlerFunc  func(m *Metric, model *old_model.Model)
+	ValFunc      func(m *Metric, model *old_model.Model) float64
 	DefaultValue float64
 	IsPermanent  bool
 	isRegistered bool
@@ -36,7 +36,7 @@ func (m *Metric) Unregister() {
 }
 
 // Update method
-func (m *Metric) Update(curModel *model.Model) {
+func (m *Metric) Update(curModel *old_model.Model) {
 	if m.IsPermanent {
 		m.Register()
 	}
