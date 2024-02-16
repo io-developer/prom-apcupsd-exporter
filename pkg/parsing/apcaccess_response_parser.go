@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 )
 
 type ApcaccessParser struct {
@@ -24,7 +24,7 @@ func NewApcaccessParser() *ApcaccessParser {
 	}
 }
 
-func (p *ApcaccessParser) ParseOutput(output string) (*apcupsd.ApcaccessResponse, error) {
+func (p *ApcaccessParser) ParseOutput(output string) (*dto.ApcaccessResponse, error) {
 	keyVals := make(map[string]string)
 	for _, line := range strings.Split(output, "\n") {
 		slice := strings.SplitN(line, ":", 2)
@@ -34,7 +34,7 @@ func (p *ApcaccessParser) ParseOutput(output string) (*apcupsd.ApcaccessResponse
 			keyVals[key] = val
 		}
 	}
-	return &apcupsd.ApcaccessResponse{
+	return &dto.ApcaccessResponse{
 		Output:    output,
 		KeyValues: keyVals,
 	}, nil

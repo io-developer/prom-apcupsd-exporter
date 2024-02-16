@@ -3,15 +3,15 @@ package parsing
 import (
 	"time"
 
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 )
 
 type ApcaccessResponseReader struct {
-	Response *apcupsd.ApcaccessResponse
+	Response *dto.ApcaccessResponse
 	Parser   *ApcaccessParser
 }
 
-func NewApcaccessResponseReader(response *apcupsd.ApcaccessResponse) *ApcaccessResponseReader {
+func NewApcaccessResponseReader(response *dto.ApcaccessResponse) *ApcaccessResponseReader {
 	return &ApcaccessResponseReader{
 		Response: response,
 		Parser:   NewApcaccessParser(),

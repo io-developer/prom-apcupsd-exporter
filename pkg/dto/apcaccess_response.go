@@ -1,4 +1,4 @@
-package apcupsd
+package dto
 
 type ApcaccessResponse struct {
 	Output    string

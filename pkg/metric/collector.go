@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/cli"
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/model"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
 
@@ -34,7 +34,7 @@ type Collector struct {
 	started             bool
 	collectCh           chan CollectOpts
 	currModel           *model.Model
-	lastOutput          *apcupsd.ApcaccessResponse
+	lastOutput          *dto.ApcaccessResponse
 	lastOutputTs        int64
 	lastSuccessOutputTs int64
 	lastState           model.State
@@ -50,7 +50,7 @@ func NewCollector(opts CollectorOtps) *Collector {
 		opts:      &opts,
 		collectCh: make(chan CollectOpts),
 		currModel: model.NewModel(),
-		lastOutput: &apcupsd.ApcaccessResponse{
+		lastOutput: &dto.ApcaccessResponse{
 			Output:    "",
 			KeyValues: make(map[string]string),
 		},

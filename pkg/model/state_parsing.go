@@ -1,14 +1,14 @@
 package model
 
 import (
-	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto/apcupsd"
+	"github.com/io-developer/prom-apcupsd-exporter/pkg/dto"
 	"github.com/io-developer/prom-apcupsd-exporter/pkg/parsing"
 )
 
 var defaultState = &State{}
 
 // NewStateFromOutput ..
-func NewStateFromOutput(response *apcupsd.ApcaccessResponse, def *State) State {
+func NewStateFromOutput(response *dto.ApcaccessResponse, def *State) State {
 	if def == nil {
 		def = defaultState
 	}
